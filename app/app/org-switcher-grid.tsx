@@ -204,7 +204,7 @@ export function OrgSwitcherGrid({
         {/* Footer — never scrolls, pinned to bottom */}
         <div className="px-8 md:px-16 py-8 shrink-0 border-t border-border flex flex-col xl:flex-row items-center justify-between gap-6">
           <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground">
-            © 2024 thinkraft labs. Built for Scale.
+            © 2024 thinkraft labs.
           </p>
           <div className="flex gap-6">
             <button className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase">Terms</button>
