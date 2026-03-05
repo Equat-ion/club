@@ -5,7 +5,7 @@
   "devCommand": "pnpm run dev",
   "git": {
     "deploymentEnabled": {
-      "main": true
+      "main": false
     }
   },
   "headers": [
@@ -49,10 +49,5 @@
       ]
     }
   ],
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/"
-    }
-  ]
+  "rewrites": []
 }
