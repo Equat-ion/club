@@ -48,18 +48,12 @@ export default async function OrgSwitcherPage() {
   const orgs = await getUserOrgsWithPlans(session.user.id);
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-2xl space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">
-            Welcome back, {session.user.name.split(" ")[0]}
-          </h1>
-          <p className="text-muted-foreground">
-            Select an organisation to get started, or create a new one.
-          </p>
-        </div>
-        <OrgSwitcherGrid orgs={orgs} />
+    <div className="w-full flex h-screen overflow-hidden items-center justify-center p-4 md:p-8 bg-[url('/org_bg.svg')] bg-cover bg-center bg-fixed antialiased">
+      <div className="absolute inset-0 bg-white/70 pointer-events-none"></div>
+      <div className="relative max-w-6xl w-full bg-background/90 border-2 border-border flex flex-col md:flex-row overflow-hidden shadow-2xl" style={{ height: 'calc(100vh - 4rem)' }}>
+        <OrgSwitcherGrid orgs={orgs} user={session.user} />
       </div>
     </div>
   );
+
 }
