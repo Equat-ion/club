@@ -1,7 +1,7 @@
 # Club — Product Specification
 
 > Modular Student Org Management Platform
-> Version: 0.1 (MVP)
+> Version: 0.1.1 (MVP-2)
 > Last Updated: 2026-03-05
 > Status: Pre-development
 
@@ -886,6 +886,7 @@ RESEND_API_KEY=                      # Transactional email (invitations, verific
 - [ ] Deploy to production
 
 ---
+
 
 ## Appendix: Key Decisions & Rationale
 
