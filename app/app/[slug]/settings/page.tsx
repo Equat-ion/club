@@ -5,7 +5,18 @@ import { db } from "@/lib/db";
 import { organization, member } from "@/lib/db/schema/auth";
 import { eq, and } from "drizzle-orm";
 import { SettingsContent } from "@/components/settings/settings-content";
+import { getOrgPlugins } from "@/actions/plugins";
 
+/**
+ * Renders the organization settings page for the given route slug.
+ *
+ * Verifies the current session, that the organization exists, and that the
+ * current user is a member with the "owner" role; if any check fails the
+ * request is redirected (to /sign-in, /app, or /app/{slug} as appropriate).
+ *
+ * @param params - Promise resolving to route params containing the organization `slug`
+ * @returns The React element for the organization's Settings page, including loaded plugins
+ */
 export default async function SettingsPage({
   params,
 }: {
@@ -47,6 +58,10 @@ export default async function SettingsPage({
     redirect(`/app/${slug}`);
   }
 
+  // Fetch installed plugins (owner already verified above)
+  const pluginsResult = await getOrgPlugins(org.id);
+  const installedPlugins = pluginsResult.success ? pluginsResult.plugins : [];
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -60,6 +75,7 @@ export default async function SettingsPage({
         orgSlug={slug}
         orgName={org.name}
         orgLogo={org.logo ?? null}
+        installedPlugins={installedPlugins}
       />
     </div>
   );
