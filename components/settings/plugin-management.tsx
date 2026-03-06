@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Package, Plus } from "lucide-react";
+import { Package, Plus, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -79,13 +79,26 @@ function PluginRow({ plugin, orgId, orgSlug, onToggled }: PluginRowProps) {
                     {formatDate(plugin.createdAt)}
                 </TableCell>
 
-                {/* Switch — no header */}
+                {/* Settings button + Switch — no header */}
                 <TableCell className="text-right">
-                    <Switch
-                        checked={plugin.enabled}
-                        onCheckedChange={handleSwitchClick}
-                        aria-label={`${plugin.enabled ? "Disable" : "Enable"} ${plugin.name}`}
-                    />
+                    <div className="flex items-center justify-end gap-2">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span tabIndex={0}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" disabled>
+                                        <Settings className="h-4 w-4" />
+                                        <span className="sr-only">Settings</span>
+                                    </Button>
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent>Coming soon</TooltipContent>
+                        </Tooltip>
+                        <Switch
+                            checked={plugin.enabled}
+                            onCheckedChange={handleSwitchClick}
+                            aria-label={`${plugin.enabled ? "Disable" : "Enable"} ${plugin.name}`}
+                        />
+                    </div>
                 </TableCell>
             </TableRow>
 
@@ -150,12 +163,11 @@ export function PluginManagement({ initialPlugins, orgId, orgSlug }: PluginManag
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            {/* no header for icon+name column */}
-                            <TableHead />
+                            <TableHead>Name</TableHead>
                             <TableHead>Description</TableHead>
                             <TableHead>Installed</TableHead>
-                            {/* no header for switch column */}
-                            <TableHead className="w-[80px]" />
+                            {/* no header for actions column */}
+                            <TableHead className="w-28" />
                         </TableRow>
                     </TableHeader>
                     <TableBody>
