@@ -20,10 +20,10 @@ type OrgItem = {
 
 const MAX_VISIBLE_ORGS = 6;
 
-export function OrgSwitcherGrid({ 
+export function OrgSwitcherGrid({
   orgs,
   user
-}: { 
+}: {
   orgs: OrgItem[];
   user: { name: string; image?: string | null; email: string };
 }) {
@@ -92,7 +92,7 @@ export function OrgSwitcherGrid({
           </div>
 
           <div className="mt-16">
-            <button 
+            <button
               onClick={() => setCreateOpen(true)}
               className="w-full max-w-xs flex items-center justify-center gap-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-4 px-6 transition-all shadow-lg shadow-primary/25 uppercase tracking-wider text-sm"
             >
@@ -133,9 +133,9 @@ export function OrgSwitcherGrid({
         <div className="px-8 md:px-16 pt-8 md:pt-16 pb-6 shrink-0">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-black text-foreground uppercase tracking-tight">Your Organizations</h2>
-            <span className="px-4 py-1.5 bg-muted text-muted-foreground text-[10px] font-bold border border-border">
+            {/*<span className="px-4 py-1.5 bg-muted text-muted-foreground text-[10px] font-bold border border-border">
               {orgs.length} ACTIVE
-            </span>
+            </span>*/}
           </div>
         </div>
 
