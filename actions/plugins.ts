@@ -9,6 +9,9 @@ import { PLUGINS, type Plugin } from "@/lib/plugins/registry";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+/**
+ * Plugin installation metadata joined with plugin registry fields for UI rendering.
+ */
 export type InstalledPlugin = {
     rowId: string;       // org_plugins.id
     pluginId: string;    // registry Plugin.id

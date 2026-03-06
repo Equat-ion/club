@@ -3,6 +3,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+/**
+ * Static metadata describing a plugin that can be installed for organizations.
+ */
 export type Plugin = {
   id: string;
   name: string;
@@ -15,6 +18,9 @@ export type Plugin = {
   version: string;
 };
 
+/**
+ * Registry of all known plugins and their plan availability.
+ */
 export const PLUGINS: Plugin[] = [
   {
     id: "tasks",

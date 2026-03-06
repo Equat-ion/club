@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
+/**
+ * Props for confirming plugin enable or disable actions.
+ */
 type TogglePluginDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -23,6 +26,9 @@ type TogglePluginDialogProps = {
     onToggled: (newEnabled: boolean) => void;
 };
 
+/**
+ * Confirmation dialog for toggling a plugin's enabled state for an organization.
+ */
 export function TogglePluginDialog({
     open,
     onOpenChange,
@@ -33,6 +39,9 @@ export function TogglePluginDialog({
 }: TogglePluginDialogProps) {
     const [loading, setLoading] = useState(false);
 
+    /**
+     * Persists the requested plugin state and surfaces success or failure feedback.
+     */
     async function handleConfirm() {
         setLoading(true);
         const result = await togglePlugin(orgId, plugin.pluginId, targetEnabled);

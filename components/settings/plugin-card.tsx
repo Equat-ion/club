@@ -21,6 +21,9 @@ import { TogglePluginDialog } from "./toggle-plugin-dialog";
 import type { InstalledPlugin } from "@/actions/plugins";
 import { PLUGINS } from "@/lib/plugins/registry";
 
+/**
+ * Props for rendering an individual plugin card with toggle controls.
+ */
 type PluginCardProps = {
     plugin: InstalledPlugin;
     orgId: string;
@@ -28,6 +31,9 @@ type PluginCardProps = {
     onToggled: (pluginId: string, newEnabled: boolean) => void;
 };
 
+/**
+ * Displays a plugin card with status, version, and enable/disable controls.
+ */
 export function PluginCard({ plugin, orgId, orgSlug, onToggled }: PluginCardProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [pendingEnabled, setPendingEnabled] = useState<boolean | null>(null);
@@ -35,16 +41,25 @@ export function PluginCard({ plugin, orgId, orgSlug, onToggled }: PluginCardProp
     const registryPlugin = PLUGINS.find((p) => p.id === plugin.pluginId);
     const Icon = registryPlugin?.icon;
 
+    /**
+     * Opens the confirmation dialog with the inverse of the current plugin state.
+     */
     function handleSwitchClick() {
         setPendingEnabled(!plugin.enabled);
         setDialogOpen(true);
     }
 
+    /**
+     * Closes the confirmation dialog and clears pending state changes.
+     */
     function handleDialogClose() {
         setDialogOpen(false);
         setPendingEnabled(null);
     }
 
+    /**
+     * Forwards a confirmed toggle result to the parent and resets local dialog state.
+     */
     function handleToggled(newEnabled: boolean) {
         onToggled(plugin.pluginId, newEnabled);
         setDialogOpen(false);

@@ -5,6 +5,9 @@ import { Switch as SwitchPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Shared switch primitive wrapper with app-specific styling and size variants.
+ */
 function Switch({
   className,
   size = "default",

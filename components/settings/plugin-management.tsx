@@ -21,6 +21,9 @@ import { TogglePluginDialog } from "./toggle-plugin-dialog";
 import { PLUGINS } from "@/lib/plugins/registry";
 import type { InstalledPlugin } from "@/actions/plugins";
 
+/**
+ * Formats a plugin installation date for display in the management table.
+ */
 function formatDate(date: Date) {
     return new Intl.DateTimeFormat("en-US", {
         month: "short",
@@ -29,6 +32,9 @@ function formatDate(date: Date) {
     }).format(new Date(date));
 }
 
+/**
+ * Props for a single plugin row in the plugin management table.
+ */
 type PluginRowProps = {
     plugin: InstalledPlugin;
     orgId: string;
@@ -36,6 +42,9 @@ type PluginRowProps = {
     onToggled: (pluginId: string, newEnabled: boolean) => void;
 };
 
+/**
+ * Renders one plugin row with details, settings placeholder, and enable switch.
+ */
 function PluginRow({ plugin, orgId, orgSlug, onToggled }: PluginRowProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [pendingEnabled, setPendingEnabled] = useState<boolean | null>(null);
@@ -43,11 +52,17 @@ function PluginRow({ plugin, orgId, orgSlug, onToggled }: PluginRowProps) {
     const registryPlugin = PLUGINS.find((p) => p.id === plugin.pluginId);
     const Icon = registryPlugin?.icon;
 
+    /**
+     * Opens the toggle confirmation dialog with the opposite enabled state.
+     */
     function handleSwitchClick() {
         setPendingEnabled(!plugin.enabled);
         setDialogOpen(true);
     }
 
+    /**
+     * Applies a confirmed toggle result to parent state and resets local dialog state.
+     */
     function handleToggled(newEnabled: boolean) {
         onToggled(plugin.pluginId, newEnabled);
         setDialogOpen(false);
@@ -122,15 +137,24 @@ function PluginRow({ plugin, orgId, orgSlug, onToggled }: PluginRowProps) {
     );
 }
 
+/**
+ * Props for the plugin management table and its initial plugin data.
+ */
 type PluginManagementProps = {
     initialPlugins: InstalledPlugin[];
     orgId: string;
     orgSlug: string;
 };
 
+/**
+ * Displays installed plugins for an organization and handles optimistic toggle updates.
+ */
 export function PluginManagement({ initialPlugins, orgId, orgSlug }: PluginManagementProps) {
     const [plugins, setPlugins] = useState<InstalledPlugin[]>(initialPlugins);
 
+    /**
+     * Updates local plugin state after a toggle is confirmed in a child row dialog.
+     */
     function handleToggled(pluginId: string, newEnabled: boolean) {
         setPlugins((prev) =>
             prev.map((p) => (p.pluginId === pluginId ? { ...p, enabled: newEnabled } : p))
