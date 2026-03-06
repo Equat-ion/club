@@ -11,6 +11,8 @@ export type Plugin = {
   icon: LucideIcon;
   plans: ("free" | "plus" | "enterprise")[];
   defaultEnabled: boolean;
+  category: "productivity" | "communication" | "management" | "other";
+  version: string;
 };
 
 export const PLUGINS: Plugin[] = [
@@ -22,6 +24,8 @@ export const PLUGINS: Plugin[] = [
     icon: CheckSquare,
     plans: ["free", "plus", "enterprise"],
     defaultEnabled: true,
+    category: "productivity",
+    version: "1.0.0",
   },
   // future: chat, storage, notes, whiteboards, recruitment, finances
 ];

@@ -16,18 +16,22 @@ import {
 } from "@/components/ui/card";
 import { updateOrgName, updateOrgLogo } from "@/actions/settings";
 import { DeleteOrgDialog } from "./delete-org-dialog";
+import { PluginManagement } from "./plugin-management";
 import { toast } from "sonner";
+import type { InstalledPlugin } from "@/actions/plugins";
 
 export function SettingsContent({
   orgId,
   orgSlug,
   orgName,
   orgLogo,
+  installedPlugins,
 }: {
   orgId: string;
   orgSlug: string;
   orgName: string;
   orgLogo: string | null;
+  installedPlugins: InstalledPlugin[];
 }) {
   const router = useRouter();
   const [name, setName] = useState(orgName);
@@ -143,6 +147,15 @@ export function SettingsContent({
           </CardFooter>
         </form>
       </Card>
+
+      <Separator />
+
+      {/* Plugin Management */}
+      <PluginManagement
+        initialPlugins={installedPlugins}
+        orgId={orgId}
+        orgSlug={orgSlug}
+      />
 
       <Separator />
 

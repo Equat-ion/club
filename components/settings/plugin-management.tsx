@@ -1,0 +1,190 @@
+"use client";
+
+import { useState } from "react";
+import { Package, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { TogglePluginDialog } from "./toggle-plugin-dialog";
+import { PLUGINS } from "@/lib/plugins/registry";
+import type { InstalledPlugin } from "@/actions/plugins";
+
+function formatDate(date: Date) {
+    return new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    }).format(new Date(date));
+}
+
+type PluginRowProps = {
+    plugin: InstalledPlugin;
+    orgId: string;
+    orgSlug: string;
+    onToggled: (pluginId: string, newEnabled: boolean) => void;
+};
+
+function PluginRow({ plugin, orgId, orgSlug, onToggled }: PluginRowProps) {
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [pendingEnabled, setPendingEnabled] = useState<boolean | null>(null);
+
+    const registryPlugin = PLUGINS.find((p) => p.id === plugin.pluginId);
+    const Icon = registryPlugin?.icon;
+
+    function handleSwitchClick() {
+        setPendingEnabled(!plugin.enabled);
+        setDialogOpen(true);
+    }
+
+    function handleToggled(newEnabled: boolean) {
+        onToggled(plugin.pluginId, newEnabled);
+        setDialogOpen(false);
+        setPendingEnabled(null);
+    }
+
+    return (
+        <>
+            <TableRow>
+                {/* Name — icon + plugin name, no header text */}
+                <TableCell>
+                    <div className="flex items-center gap-3">
+                        {Icon && (
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-muted">
+                                <Icon className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                        )}
+                        <span className="text-sm font-medium">{plugin.name}</span>
+                    </div>
+                </TableCell>
+
+                {/* Description */}
+                <TableCell className="text-sm text-muted-foreground">
+                    {plugin.description}
+                </TableCell>
+
+                {/* Installed date */}
+                <TableCell className="text-sm text-muted-foreground">
+                    {formatDate(plugin.createdAt)}
+                </TableCell>
+
+                {/* Switch — no header */}
+                <TableCell className="text-right">
+                    <Switch
+                        checked={plugin.enabled}
+                        onCheckedChange={handleSwitchClick}
+                        aria-label={`${plugin.enabled ? "Disable" : "Enable"} ${plugin.name}`}
+                    />
+                </TableCell>
+            </TableRow>
+
+            {pendingEnabled !== null && (
+                <TogglePluginDialog
+                    open={dialogOpen}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setDialogOpen(false);
+                            setPendingEnabled(null);
+                        }
+                    }}
+                    plugin={plugin}
+                    targetEnabled={pendingEnabled}
+                    orgId={orgId}
+                    orgSlug={orgSlug}
+                    onToggled={handleToggled}
+                />
+            )}
+        </>
+    );
+}
+
+type PluginManagementProps = {
+    initialPlugins: InstalledPlugin[];
+    orgId: string;
+    orgSlug: string;
+};
+
+export function PluginManagement({ initialPlugins, orgId, orgSlug }: PluginManagementProps) {
+    const [plugins, setPlugins] = useState<InstalledPlugin[]>(initialPlugins);
+
+    function handleToggled(pluginId: string, newEnabled: boolean) {
+        setPlugins((prev) =>
+            prev.map((p) => (p.pluginId === pluginId ? { ...p, enabled: newEnabled } : p))
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-base font-semibold">Plugins</h2>
+                    <p className="text-sm text-muted-foreground">
+                        Manage the tools available to your organization.
+                    </p>
+                </div>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <span tabIndex={0}>
+                            <Button variant="outline" size="sm" disabled className="gap-1.5">
+                                <Plus className="h-4 w-4" />
+                                Install Plugins
+                            </Button>
+                        </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Coming soon</TooltipContent>
+                </Tooltip>
+            </div>
+
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            {/* no header for icon+name column */}
+                            <TableHead />
+                            <TableHead>Description</TableHead>
+                            <TableHead>Installed</TableHead>
+                            {/* no header for switch column */}
+                            <TableHead className="w-[80px]" />
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {plugins.length === 0 ? (
+                            <TableRow>
+                                <TableCell
+                                    colSpan={4}
+                                    className="h-24 text-center"
+                                >
+                                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                                        <Package className="h-6 w-6 opacity-50" />
+                                        <span className="text-sm">No plugins installed</span>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            plugins.map((plugin) => (
+                                <PluginRow
+                                    key={plugin.pluginId}
+                                    plugin={plugin}
+                                    orgId={orgId}
+                                    orgSlug={orgSlug}
+                                    onToggled={handleToggled}
+                                />
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+        </div>
+    );
+}
