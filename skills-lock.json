@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "skills": {
+    "ai-brand-kit": {
+      "source": "omer-metin/skills-for-antigravity",
+      "sourceType": "github",
+      "computedHash": "56944713cabfdebd1980ff5eb4d7592bda6bb07d0b34e0f2fea6c7a59f768db4"
+    },
+    "drizzle-orm": {
+      "source": "bobmatnyc/claude-mpm-skills",
+      "sourceType": "github",
+      "computedHash": "9aea7469d696c9b5fa54a84b7a92ea692872fb624fb028f866ab0f3deac84867"
+    },
+    "frontend-ui-ux-engineer": {
+      "source": "404kidwiz/claude-supercode-skills",
+      "sourceType": "github",
+      "computedHash": "074176a7c86baeea322124c5d3dd0104561d752ca408ff994ae742b61c19ca66"
+    },
+    "nextjs-fullstack-setup": {
+      "source": "yigit433/nextjs-skills",
+      "sourceType": "github",
+      "computedHash": "ec0206357b4096b1ff2df74f005f80db75839139d938f2fbf6751fa373986e9e"
+    },
+    "pdf": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "cfbc539377088ca7e44a813b30c306327385bbd973cd7a721e1743f60837dd62"
+    },
+    "shadcn-ui-expert": {
+      "source": "majesteitbart/talentmatcher",
+      "sourceType": "github",
+      "computedHash": "969ad2b851208dedb57a59eadd52fc86a8a8bf6bcb728c660c82dfa2045c8e90"
+    },
+    "tailwind-css": {
+      "source": "bobmatnyc/claude-mpm-skills",
+      "sourceType": "github",
+      "computedHash": "d4d19f6b1d60306895b5c0f5bb57a4640b54ed2b6ef74121781413fc16c1bf3f"
+    },
+    "webconsulting-branding": {
+      "source": "dirnbauer/webconsulting-skills",
+      "sourceType": "github",
+      "computedHash": "26abc6b7e04be6a3683ca7bdd17f9a623bbecc60336023c916e8ffb735ec8638"
+    }
+  }
+}
