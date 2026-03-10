@@ -46,6 +46,12 @@ export type HookEventMap = {
         actorId: string;
     };
 
+    /** Fired after a plugin is successfully installed for an org. */
+    "plugin:installed": {
+        orgId: string;
+        pluginId: string;
+    };
+
     /** Fired after a plugin is successfully enabled for an org. */
     "plugin:enabled": {
         orgId: string;

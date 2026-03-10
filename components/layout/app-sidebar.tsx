@@ -6,6 +6,7 @@ import {
   Home,
   Users,
   Settings,
+  Package,
 } from "lucide-react";
 import {
   Sidebar,
@@ -62,6 +63,12 @@ export function AppSidebar({ user, orgs, enabledPluginIds }: AppSidebarProps) {
       href: `/app/${slug}/members`,
       icon: Users,
       visible: true,
+    },
+    {
+      title: "Plugins",
+      href: `/app/${slug}/plugins`,
+      icon: Package,
+      visible: org.role === "owner",
     },
     {
       title: "Settings",

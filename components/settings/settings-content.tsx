@@ -15,22 +15,19 @@ import {
 } from "@/components/ui/card";
 import { updateOrgName, updateOrgLogo } from "@/actions/settings";
 import { DeleteOrgDialog } from "./delete-org-dialog";
-import { PluginManagement } from "./plugin-management";
 import { toast } from "sonner";
-import type { InstalledPlugin } from "@/actions/plugins";
+
 
 export function SettingsContent({
   orgId,
   orgSlug,
   orgName,
   orgLogo,
-  installedPlugins,
 }: {
   orgId: string;
   orgSlug: string;
   orgName: string;
   orgLogo: string | null;
-  installedPlugins: InstalledPlugin[];
 }) {
   const router = useRouter();
   const [name, setName] = useState(orgName);
@@ -143,14 +140,6 @@ export function SettingsContent({
         </form>
       </div>
 
-      {/* Plugin Management */}
-      <div className="pt-4">
-        <PluginManagement
-          initialPlugins={installedPlugins}
-          orgId={orgId}
-          orgSlug={orgSlug}
-        />
-      </div>
 
       {/* Danger Zone */}
       <Card className="border-destructive/50">
