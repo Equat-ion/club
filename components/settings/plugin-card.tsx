@@ -20,20 +20,22 @@ import {
 import { TogglePluginDialog } from "./toggle-plugin-dialog";
 import type { InstalledPlugin } from "@/actions/plugins";
 import { PLUGINS } from "@/lib/plugins/registry";
+import { resolvePluginIcon } from "@/lib/plugins/icon-resolver";
 
 type PluginCardProps = {
     plugin: InstalledPlugin;
     orgId: string;
     orgSlug: string;
-    onToggled: (pluginId: string, newEnabled: boolean) => void;
+    enabledPluginIds: string[];
+    onToggled: (pluginId: string, newEnabled: boolean, cascadedIds?: string[]) => void;
 };
 
-export function PluginCard({ plugin, orgId, orgSlug, onToggled }: PluginCardProps) {
+export function PluginCard({ plugin, orgId, orgSlug, enabledPluginIds, onToggled }: PluginCardProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [pendingEnabled, setPendingEnabled] = useState<boolean | null>(null);
 
     const registryPlugin = PLUGINS.find((p) => p.id === plugin.pluginId);
-    const Icon = registryPlugin?.icon;
+    const Icon = registryPlugin ? resolvePluginIcon(registryPlugin.icon) : null;
 
     function handleSwitchClick() {
         setPendingEnabled(!plugin.enabled);
@@ -45,8 +47,8 @@ export function PluginCard({ plugin, orgId, orgSlug, onToggled }: PluginCardProp
         setPendingEnabled(null);
     }
 
-    function handleToggled(newEnabled: boolean) {
-        onToggled(plugin.pluginId, newEnabled);
+    function handleToggled(newEnabled: boolean, cascadedIds?: string[]) {
+        onToggled(plugin.pluginId, newEnabled, cascadedIds);
         setDialogOpen(false);
         setPendingEnabled(null);
     }
@@ -109,6 +111,7 @@ export function PluginCard({ plugin, orgId, orgSlug, onToggled }: PluginCardProp
                     targetEnabled={pendingEnabled}
                     orgId={orgId}
                     orgSlug={orgSlug}
+                    enabledPluginIds={enabledPluginIds}
                     onToggled={handleToggled}
                 />
             )}

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/tooltip";
 import { TogglePluginDialog } from "./toggle-plugin-dialog";
 import { PLUGINS } from "@/lib/plugins/registry";
+import { resolvePluginIcon } from "@/lib/plugins/icon-resolver";
 import type { InstalledPlugin } from "@/actions/plugins";
 
 function formatDate(date: Date) {
@@ -33,23 +34,24 @@ type PluginRowProps = {
     plugin: InstalledPlugin;
     orgId: string;
     orgSlug: string;
-    onToggled: (pluginId: string, newEnabled: boolean) => void;
+    enabledPluginIds: string[];
+    onToggled: (pluginId: string, newEnabled: boolean, cascadedIds?: string[]) => void;
 };
 
-function PluginRow({ plugin, orgId, orgSlug, onToggled }: PluginRowProps) {
+function PluginRow({ plugin, orgId, orgSlug, enabledPluginIds, onToggled }: PluginRowProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [pendingEnabled, setPendingEnabled] = useState<boolean | null>(null);
 
     const registryPlugin = PLUGINS.find((p) => p.id === plugin.pluginId);
-    const Icon = registryPlugin?.icon;
+    const Icon = registryPlugin ? resolvePluginIcon(registryPlugin.icon) : null;
 
     function handleSwitchClick() {
         setPendingEnabled(!plugin.enabled);
         setDialogOpen(true);
     }
 
-    function handleToggled(newEnabled: boolean) {
-        onToggled(plugin.pluginId, newEnabled);
+    function handleToggled(newEnabled: boolean, cascadedIds?: string[]) {
+        onToggled(plugin.pluginId, newEnabled, cascadedIds);
         setDialogOpen(false);
         setPendingEnabled(null);
     }
@@ -57,7 +59,7 @@ function PluginRow({ plugin, orgId, orgSlug, onToggled }: PluginRowProps) {
     return (
         <>
             <TableRow>
-                {/* Name — icon + plugin name, no header text */}
+                {/* Name — icon + plugin name */}
                 <TableCell>
                     <div className="flex items-center gap-3">
                         {Icon && (
@@ -79,7 +81,7 @@ function PluginRow({ plugin, orgId, orgSlug, onToggled }: PluginRowProps) {
                     {formatDate(plugin.createdAt)}
                 </TableCell>
 
-                {/* Settings button + Switch — no header */}
+                {/* Settings button + Switch */}
                 <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                         <Tooltip>
@@ -115,6 +117,7 @@ function PluginRow({ plugin, orgId, orgSlug, onToggled }: PluginRowProps) {
                     targetEnabled={pendingEnabled}
                     orgId={orgId}
                     orgSlug={orgSlug}
+                    enabledPluginIds={enabledPluginIds}
                     onToggled={handleToggled}
                 />
             )}
@@ -131,9 +134,16 @@ type PluginManagementProps = {
 export function PluginManagement({ initialPlugins, orgId, orgSlug }: PluginManagementProps) {
     const [plugins, setPlugins] = useState<InstalledPlugin[]>(initialPlugins);
 
-    function handleToggled(pluginId: string, newEnabled: boolean) {
+    const enabledPluginIds = plugins.filter((p) => p.enabled).map((p) => p.pluginId);
+
+    function handleToggled(pluginId: string, newEnabled: boolean, cascadedIds?: string[]) {
         setPlugins((prev) =>
-            prev.map((p) => (p.pluginId === pluginId ? { ...p, enabled: newEnabled } : p))
+            prev.map((p) => {
+                if (p.pluginId === pluginId) return { ...p, enabled: newEnabled };
+                // Also flip any deps that were auto-enabled as a cascade
+                if (newEnabled && cascadedIds?.includes(p.pluginId)) return { ...p, enabled: true };
+                return p;
+            })
         );
     }
 
@@ -190,6 +200,7 @@ export function PluginManagement({ initialPlugins, orgId, orgSlug }: PluginManag
                                     plugin={plugin}
                                     orgId={orgId}
                                     orgSlug={orgSlug}
+                                    enabledPluginIds={enabledPluginIds}
                                     onToggled={handleToggled}
                                 />
                             ))

@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "drizzle-orm": {
+      "source": "/home/areeb/.agents/skills/drizzle-orm",
+      "sourceType": "local",
+      "computedHash": "e577f519e68e361c89127dd7137a773aca67a64f07861a381e853e156640f534"
+    },
+    "frontend-ui-ux-engineer": {
+      "source": "/home/areeb/.agents/skills/frontend-ui-ux-engineer",
+      "sourceType": "local",
+      "computedHash": "074176a7c86baeea322124c5d3dd0104561d752ca408ff994ae742b61c19ca66"
+    },
+    "nextjs-fullstack-setup": {
+      "source": "/home/areeb/.agents/skills/nextjs-fullstack-setup",
+      "sourceType": "local",
+      "computedHash": "ec0206357b4096b1ff2df74f005f80db75839139d938f2fbf6751fa373986e9e"
+    },
+    "shadcn-ui-expert": {
+      "source": "/home/areeb/.agents/skills/shadcn-ui-expert",
+      "sourceType": "local",
+      "computedHash": "969ad2b851208dedb57a59eadd52fc86a8a8bf6bcb728c660c82dfa2045c8e90"
+    },
+    "system-architect": {
+      "source": "aj-geddes/claude-code-bmad-skills",
+      "sourceType": "github",
+      "computedHash": "df27ff056c0e08795070e597105707843f48b153aac5123793efea82838d289a"
+    },
+    "tailwind-css": {
+      "source": "/home/areeb/.agents/skills/tailwind-css",
+      "sourceType": "local",
+      "computedHash": "6f591a1fcaa35483d62270b2ec65c03bb0416a70ab3a7f40e14cce1fec080065"
+    }
+  }
+}

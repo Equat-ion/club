@@ -21,6 +21,10 @@ import type {
   IssueActivityEntry,
   OrgMember,
 } from "@/lib/plugins/tasks-types";
+import { initHooks, hooksRegistry } from "@/lib/hooks";
+
+// Register all plugin hook handlers once at module load.
+initHooks();
 
 // ============================================================
 // Helpers
@@ -369,6 +373,14 @@ export async function createIssue(
       toValue: data.title,
     });
 
+    await hooksRegistry.emit("task:created", {
+      orgId,
+      issueId,
+      identifier,
+      title: data.title,
+      creatorId: session.user.id,
+    });
+
     revalidatePath("/app");
     return { success: true, issueId, identifier };
   } catch (error) {
@@ -465,6 +477,13 @@ export async function updateIssue(
       );
     }
 
+    await hooksRegistry.emit("task:updated", {
+      orgId: current.orgId,
+      issueId,
+      changes: data,
+      actorId: session.user.id,
+    });
+
     revalidatePath("/app");
     return { success: true };
   } catch (error) {
@@ -494,6 +513,12 @@ export async function deleteIssue(issueId: string) {
     }
 
     await db.delete(issues).where(eq(issues.id, issueId));
+
+    await hooksRegistry.emit("task:deleted", {
+      orgId: issue.orgId,
+      issueId,
+      actorId: session.user.id,
+    });
 
     revalidatePath("/app");
     return { success: true };
