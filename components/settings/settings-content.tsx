@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Card,
   CardContent,
@@ -16,18 +15,22 @@ import {
 } from "@/components/ui/card";
 import { updateOrgName, updateOrgLogo } from "@/actions/settings";
 import { DeleteOrgDialog } from "./delete-org-dialog";
+import { PluginManagement } from "./plugin-management";
 import { toast } from "sonner";
+import type { InstalledPlugin } from "@/actions/plugins";
 
 export function SettingsContent({
   orgId,
   orgSlug,
   orgName,
   orgLogo,
+  installedPlugins,
 }: {
   orgId: string;
   orgSlug: string;
   orgName: string;
   orgLogo: string | null;
+  installedPlugins: InstalledPlugin[];
 }) {
   const router = useRouter();
   const [name, setName] = useState(orgName);
@@ -71,27 +74,25 @@ export function SettingsContent({
   return (
     <div className="space-y-6">
       {/* Org Name */}
-      <Card>
-        <form onSubmit={handleSaveName}>
-          <CardHeader>
-            <CardTitle>Organization Name</CardTitle>
-            <CardDescription>
-              This is the display name of your organization.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="orgName">Name</Label>
-              <Input
-                id="orgName"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Organization name"
-                maxLength={100}
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between border-t px-6 py-4">
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-medium">Organization Name</h3>
+          <p className="text-sm text-muted-foreground">
+            This is the display name of your organization.
+          </p>
+        </div>
+        <form onSubmit={handleSaveName} className="space-y-3 max-w-xl">
+          <div className="space-y-2">
+            <Label htmlFor="orgName">Name</Label>
+            <Input
+              id="orgName"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Organization name"
+              maxLength={100}
+            />
+          </div>
+          <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               Maximum 100 characters.
             </p>
@@ -102,32 +103,30 @@ export function SettingsContent({
             >
               {savingName ? "Saving..." : "Save"}
             </Button>
-          </CardFooter>
+          </div>
         </form>
-      </Card>
+      </div>
 
       {/* Org Logo */}
-      <Card>
-        <form onSubmit={handleSaveLogo}>
-          <CardHeader>
-            <CardTitle>Logo</CardTitle>
-            <CardDescription>
-              Provide a URL for your organization&apos;s logo.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="orgLogo">Logo URL</Label>
-              <Input
-                id="orgLogo"
-                value={logo}
-                onChange={(e) => setLogo(e.target.value)}
-                placeholder="https://example.com/logo.png"
-                type="url"
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between border-t px-6 py-4">
+      <div className="space-y-4 pt-4">
+        <div>
+          <h3 className="text-lg font-medium">Logo</h3>
+          <p className="text-sm text-muted-foreground">
+            Provide a URL for your organization&apos;s logo.
+          </p>
+        </div>
+        <form onSubmit={handleSaveLogo} className="space-y-3 max-w-xl">
+          <div className="space-y-2">
+            <Label htmlFor="orgLogo">Logo URL</Label>
+            <Input
+              id="orgLogo"
+              value={logo}
+              onChange={(e) => setLogo(e.target.value)}
+              placeholder="https://example.com/logo.png"
+              type="url"
+            />
+          </div>
+          <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               Use a square image for best results.
             </p>
@@ -140,11 +139,18 @@ export function SettingsContent({
             >
               {savingLogo ? "Saving..." : "Save"}
             </Button>
-          </CardFooter>
+          </div>
         </form>
-      </Card>
+      </div>
 
-      <Separator />
+      {/* Plugin Management */}
+      <div className="pt-4">
+        <PluginManagement
+          initialPlugins={installedPlugins}
+          orgId={orgId}
+          orgSlug={orgSlug}
+        />
+      </div>
 
       {/* Danger Zone */}
       <Card className="border-destructive/50">

@@ -25,6 +25,7 @@ import { OrgSwitcher } from "./org-switcher";
 import { UserNav } from "./user-nav";
 import { useOrg } from "@/hooks/use-org";
 import { PLUGINS } from "@/lib/plugins/registry";
+import { resolvePluginIcon } from "@/lib/plugins/icon-resolver";
 
 type OrgListItem = {
   id: string;
@@ -77,7 +78,7 @@ export function AppSidebar({ user, orgs, enabledPluginIds }: AppSidebarProps) {
   ).map((plugin) => ({
     title: plugin.name,
     href: `/app/${slug}/${plugin.slug}`,
-    icon: plugin.icon,
+    icon: resolvePluginIcon(plugin.icon),
   }));
 
   return (
