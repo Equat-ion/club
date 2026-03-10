@@ -191,14 +191,19 @@ RESEND_API_KEY=                      # Transactional email (invitations, verific
 - [ ] Plan limit enforcement on invite
 
 ### Phase 4 — Task Management Plugin
-- [ ] Plugin registry + `org_plugins` table integration
-- [ ] Issues list page (`/:slug/tasks`) — grouped by status
-- [ ] Create issue (inline + modal)
-- [ ] Issue detail page (`/:slug/tasks/[issueId]`)
-- [ ] Status, priority, assignee, due date fields
-- [ ] Issue activity log
-- [ ] Comments
-- [ ] Issue identifier generation (`ACM-1`, `ACM-2`, ...)
+- [x] Plugin registry + `org_plugins` table integration
+- [x] Tasks list page (`/:slug/tasks`) — Grouped & List views
+- [x] Create task (dialog)
+- [x] Task detail page (`/:slug/tasks/[issueId]`) — Full single-column redesign
+- [x] Status, priority, assignee, due date, team, and labels fields
+- [x] Inline editing for title, description, and metadata
+- [x] Task activity log (plain language)
+- [x] Comments / Discussion
+- [x] Task identifier generation (`ACM-1`, `ACM-2`, ...)
+- [x] Labels management (org-scoped, inline creation)
+- [x] Teams integration (optional dependency)
+- [x] Dashboard widget (My Tasks)
+- [x] Granular event hooks
 
 ### Phase 5 — Settings & Billing
 - [ ] Org settings page (`/:slug/settings`)

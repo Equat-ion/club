@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Package, Plus, Settings, Layers } from "lucide-react";
+import { Package, Plus, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -113,20 +113,9 @@ function PluginRow({ plugin, orgId, orgSlug, enabledPluginIds, onToggled }: Plug
                     {formatDate(plugin.createdAt)}
                 </TableCell>
 
-                {/* Settings button + Switch */}
+                {/* Status Switch */}
                 <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <span tabIndex={0}>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" disabled>
-                                        <Settings className="h-4 w-4" />
-                                        <span className="sr-only">Settings</span>
-                                    </Button>
-                                </span>
-                            </TooltipTrigger>
-                            <TooltipContent>Coming soon</TooltipContent>
-                        </Tooltip>
                         <Switch
                             checked={plugin.enabled}
                             onCheckedChange={handleSwitchClick}
@@ -260,10 +249,16 @@ function MarketplaceCard({ plugin, orgId, isInstalled, isLocked, onInstalled, in
                     <Button
                         variant={isInstalled ? "outline" : "default"}
                         className="w-full"
-                        disabled={isInstalled || isLocked || installing}
+                        disabled={isInstalled || isLocked || installing || plugin.comingSoon}
                         onClick={handleInstallClick}
                     >
-                        {installing ? "Installing..." : isInstalled ? "Already Installed" : "Install"}
+                        {installing
+                            ? "Installing..."
+                            : isInstalled
+                                ? "Already Installed"
+                                : plugin.comingSoon
+                                    ? "Coming Soon"
+                                    : "Install"}
                     </Button>
                 </CardFooter>
             </Card>

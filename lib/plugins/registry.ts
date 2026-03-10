@@ -9,6 +9,8 @@ export type Plugin = {
   defaultEnabled: boolean;
   category: "productivity" | "communication" | "management" | "other";
   version: string;
+  /** If true, the plugin is shown in the marketplace but cannot be installed yet. */
+  comingSoon?: boolean;
   /**
    * Hard dependencies — plugin IDs that MUST be enabled before this plugin
    * can be enabled. The server enforces this; the UI cascades auto-enable
@@ -46,7 +48,55 @@ export const PLUGINS: Plugin[] = [
     category: "management",
     version: "1.0.0",
   },
-  // future: chat, storage, notes, whiteboards, recruitment, finances
+  {
+    id: "chat",
+    name: "Chat",
+    description: "Real-time messaging for your organization members",
+    slug: "chat",
+    icon: "MessageSquare",
+    plans: ["free", "plus", "enterprise"],
+    defaultEnabled: false,
+    category: "communication",
+    version: "0.1.0",
+    comingSoon: true,
+  },
+  {
+    id: "federations",
+    name: "Federations",
+    description: "Connect and collaborate with other organizations",
+    slug: "federations",
+    icon: "Globe",
+    plans: ["plus", "enterprise"],
+    defaultEnabled: false,
+    category: "other",
+    version: "0.1.0",
+    comingSoon: true,
+  },
+  {
+    id: "files",
+    name: "Files",
+    description: "Secure cloud storage and file sharing for your club",
+    slug: "files",
+    icon: "FileText",
+    plans: ["free", "plus", "enterprise"],
+    defaultEnabled: false,
+    category: "productivity",
+    version: "0.1.0",
+    comingSoon: true,
+  },
+  {
+    id: "notes",
+    name: "Notes",
+    description: "Collaborative rich-text notes and documentation",
+    slug: "notes",
+    icon: "NotebookPen",
+    plans: ["free", "plus", "enterprise"],
+    defaultEnabled: false,
+    category: "productivity",
+    version: "0.1.0",
+    comingSoon: true,
+  },
+  // future: recruitment, finances, whiteboards
 ];
 
 // ---------------------------------------------------------------------------

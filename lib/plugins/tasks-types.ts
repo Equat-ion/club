@@ -2,22 +2,34 @@
 // Shared types and constants for the Task Management plugin
 // ============================================================
 
-export type IssueStatus =
+export type TaskStatus =
   | "backlog"
   | "todo"
   | "in_progress"
   | "done"
   | "cancelled";
 
-export type IssuePriority =
+export type TaskPriority =
   | "no_priority"
   | "urgent"
   | "high"
   | "medium"
   | "low";
 
-export const ISSUE_STATUSES: {
-  value: IssueStatus;
+// For backward compatibility while refactoring
+export type IssueStatus = TaskStatus;
+export type IssuePriority = TaskPriority;
+
+export interface TaskFilterState {
+  status: TaskStatus | null;
+  priority: TaskPriority | null;
+  assignee: string | null;
+  team: string | null;
+  label: string | null;
+}
+
+export const TASK_STATUSES: {
+  value: TaskStatus;
   label: string;
   order: number;
 }[] = [
@@ -28,8 +40,8 @@ export const ISSUE_STATUSES: {
   { value: "cancelled", label: "Cancelled", order: 4 },
 ];
 
-export const ISSUE_PRIORITIES: {
-  value: IssuePriority;
+export const TASK_PRIORITIES: {
+  value: TaskPriority;
   label: string;
   order: number;
 }[] = [
@@ -40,61 +52,86 @@ export const ISSUE_PRIORITIES: {
   { value: "no_priority", label: "No Priority", order: 4 },
 ];
 
-export type IssueWithAssignee = {
+export type Label = {
+  id: string;
+  name: string;
+  color: string;
+};
+
+export type TaskWithDetails = {
   id: string;
   orgId: string;
   identifier: string;
   title: string;
   description: string | null;
-  status: string;
-  priority: string;
+  status: TaskStatus;
+  priority: TaskPriority;
   assigneeId: string | null;
+  teamId: string | null;
   creatorId: string;
   dueDate: string | null;
   createdAt: Date;
   updatedAt: Date;
   assignee: {
-    id: string;
+    id: string; // memberId
     name: string;
     image: string | null;
   } | null;
-  creator: {
+  team: {
     id: string;
+    name: string;
+  } | null;
+  creator: {
+    id: string; // userId
     name: string;
     image: string | null;
   };
+  labels: Label[];
 };
 
-export type IssueComment = {
+// For backward compatibility
+export type IssueWithAssignee = TaskWithDetails;
+
+export type TaskComment = {
   id: string;
-  issueId: string;
+  taskId: string;
   body: string;
   createdAt: Date;
   updatedAt: Date;
   author: {
-    id: string;
+    id: string; // userId
     name: string;
     image: string | null;
   };
 };
 
-export type IssueActivityEntry = {
+export type IssueComment = TaskComment;
+
+export type TaskActivityEntry = {
   id: string;
-  issueId: string;
+  taskId: string;
   type: string;
   fromValue: string | null;
   toValue: string | null;
   createdAt: Date;
   actor: {
-    id: string;
+    id: string; // userId
     name: string;
     image: string | null;
   };
 };
 
+export type IssueActivityEntry = TaskActivityEntry;
+
 export type OrgMember = {
-  id: string;
+  id: string; // memberId
   name: string;
   email: string;
   image: string | null;
+  role: string;
+};
+
+export type OrgTeam = {
+  id: string;
+  name: string;
 };

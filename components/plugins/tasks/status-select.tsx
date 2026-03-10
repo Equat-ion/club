@@ -14,9 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ISSUE_STATUSES, type IssueStatus } from "@/lib/plugins/tasks-types";
+import { TASK_STATUSES, type TaskStatus } from "@/lib/plugins/tasks-types";
+import { cn } from "@/lib/utils";
 
-const STATUS_ICONS: Record<IssueStatus, React.ReactNode> = {
+const STATUS_ICONS: Record<TaskStatus, React.ReactNode> = {
   backlog: <CircleDot className="h-3.5 w-3.5 text-muted-foreground" />,
   todo: <Circle className="h-3.5 w-3.5 text-muted-foreground" />,
   in_progress: <Timer className="h-3.5 w-3.5 text-yellow-500" />,
@@ -25,40 +26,49 @@ const STATUS_ICONS: Record<IssueStatus, React.ReactNode> = {
 };
 
 export function getStatusIcon(status: string) {
-  return STATUS_ICONS[status as IssueStatus] ?? STATUS_ICONS.backlog;
+  return STATUS_ICONS[status as TaskStatus] ?? STATUS_ICONS.backlog;
 }
 
 export function getStatusLabel(status: string) {
   return (
-    ISSUE_STATUSES.find((s) => s.value === status)?.label ?? status
+    TASK_STATUSES.find((s) => s.value === status)?.label ?? status
   );
 }
 
 export function StatusSelect({
   value,
-  onValueChange,
+  onChange,
   disabled,
+  variant = "outline",
 }: {
   value: string;
-  onValueChange: (value: IssueStatus) => void;
+  onChange: (value: TaskStatus) => void;
   disabled?: boolean;
+  variant?: "outline" | "badge";
 }) {
+  const label = getStatusLabel(value);
+  const icon = getStatusIcon(value);
+
   return (
     <Select
       value={value}
-      onValueChange={(v) => onValueChange(v as IssueStatus)}
+      onValueChange={(v) => onChange(v as TaskStatus)}
       disabled={disabled}
     >
-      <SelectTrigger className="w-[150px]">
+      <SelectTrigger className={cn(
+        variant === "badge" 
+          ? "h-7 px-3 rounded-full bg-muted/50 border-none hover:bg-muted w-auto gap-2" 
+          : "w-full h-9"
+      )}>
         <SelectValue>
           <span className="flex items-center gap-2">
-            {getStatusIcon(value)}
-            <span>{getStatusLabel(value)}</span>
+            {icon}
+            <span className="truncate">{label}</span>
           </span>
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {ISSUE_STATUSES.map((status) => (
+        {TASK_STATUSES.map((status) => (
           <SelectItem key={status.value} value={status.value}>
             <span className="flex items-center gap-2">
               {getStatusIcon(status.value)}

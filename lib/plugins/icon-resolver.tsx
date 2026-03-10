@@ -10,6 +10,10 @@
 import {
     CheckSquare,
     Users,
+    MessageSquare,
+    Globe,
+    FileText,
+    NotebookPen,
     type LucideIcon,
     type LucideProps,
 } from "lucide-react";
@@ -19,6 +23,10 @@ import type { ComponentType } from "react";
 const ICON_MAP: Record<string, LucideIcon> = {
     CheckSquare,
     Users,
+    MessageSquare,
+    Globe,
+    FileText,
+    NotebookPen,
 };
 
 /**

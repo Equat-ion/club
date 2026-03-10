@@ -5,14 +5,17 @@ import { db } from "@/lib/db";
 import { organization, member } from "@/lib/db/schema/auth";
 import { eq, and } from "drizzle-orm";
 import {
-  getIssue,
-  getIssueComments,
-  getIssueActivity,
+  getTask,
+  getTaskComments,
+  getTaskActivity,
   getOrgMembers,
+  getOrgLabels,
+  getOrgTeams,
 } from "@/actions/tasks";
-import { IssueDetail } from "@/components/plugins/tasks/issue-detail";
+import { TaskDetail } from "@/components/plugins/tasks/task-detail";
+import { orgPlugins } from "@/lib/db/schema/orgs";
 
-export default async function IssueDetailPage({
+export default async function TaskDetailPage({
   params,
 }: {
   params: Promise<{ slug: string; issueId: string }>;
@@ -48,24 +51,35 @@ export default async function IssueDetailPage({
     redirect("/app");
   }
 
-  // Fetch issue and related data in parallel
-  const [issue, comments, activity, members] = await Promise.all([
-    getIssue(issueId),
-    getIssueComments(issueId),
-    getIssueActivity(issueId),
+  // Check if teams plugin is enabled
+  const installedPlugins = await db.query.orgPlugins.findMany({
+    where: eq(orgPlugins.orgId, org.id),
+  });
+  const teamsEnabled = installedPlugins.some(p => p.pluginId === "teams" && p.enabled);
+
+  // Fetch task and related data in parallel
+  const [task, comments, activity, members, labels, teams] = await Promise.all([
+    getTask(issueId),
+    getTaskComments(issueId),
+    getTaskActivity(issueId),
     getOrgMembers(org.id),
+    getOrgLabels(org.id),
+    getOrgTeams(org.id),
   ]);
 
-  if (!issue || issue.orgId !== org.id) {
+  if (!task || task.orgId !== org.id) {
     notFound();
   }
 
   return (
-    <IssueDetail
-      issue={issue}
+    <TaskDetail
+      task={task}
       comments={comments}
       activity={activity}
       members={members}
+      labels={labels}
+      teams={teams}
+      teamsEnabled={teamsEnabled}
       orgSlug={slug}
       currentUserId={session.user.id}
       currentUserRole={membership.role}

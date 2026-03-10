@@ -34,12 +34,49 @@ export type HookEventMap = {
             status?: string;
             priority?: string;
             assigneeId?: string | null;
+            teamId?: string | null;
             dueDate?: string | null;
         };
         actorId: string;
     };
 
-    /** Fired after a task is successfully deleted. */
+    /** Fired after a task status is changed. */
+    "task:status_changed": {
+        orgId: string;
+        taskId: string;
+        fromStatus: string;
+        toStatus: string;
+        memberId: string;
+    };
+
+    /** Fired after a task is assigned to a member. */
+    "task:assigned": {
+        orgId: string;
+        taskId: string;
+        toMemberId: string | null;
+        fromMemberId: string | null;
+        actorId: string;
+    };
+
+    /** Fired after a task is assigned to a team. */
+    "task:team_assigned": {
+        orgId: string;
+        taskId: string;
+        toTeamId: string | null;
+        fromTeamId: string | null;
+        actorId: string;
+    };
+
+    /** Fired after a label is added to a task. */
+    "task:label_added": {
+        orgId: string;
+        taskId: string;
+        labelId: string;
+        actorId: string;
+    };
+
+    /** Fired after a task (issue) is successfully deleted. */
+
     "task:deleted": {
         orgId: string;
         issueId: string;

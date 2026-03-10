@@ -52,7 +52,7 @@ export function MembersContent({
       </div>
 
       <Tabs defaultValue="members">
-        <TabsList>
+        <TabsList variant="line">
           <TabsTrigger value="members">
             Members ({members.length})
           </TabsTrigger>

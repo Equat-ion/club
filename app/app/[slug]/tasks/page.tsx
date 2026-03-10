@@ -4,11 +4,11 @@ import { auth } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
 import { organization, member } from "@/lib/db/schema/auth";
 import { eq, and } from "drizzle-orm";
-import { getIssues, getOrgMembers } from "@/actions/tasks";
-import { IssuesBoard } from "@/components/plugins/tasks/issues-board";
-import { CreateIssueDialog } from "@/components/plugins/tasks/create-issue-dialog";
+import { getTasks, getOrgMembers, getOrgLabels, getOrgTeams } from "@/actions/tasks";
+import { TasksPage } from "@/components/plugins/tasks/tasks-page";
+import { orgPlugins } from "@/lib/db/schema/orgs";
 
-export default async function TasksPage({
+export default async function TasksMainPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
@@ -44,28 +44,30 @@ export default async function TasksPage({
     redirect("/app");
   }
 
-  // Fetch issues and members in parallel
-  const [issues, members] = await Promise.all([
-    getIssues(org.id),
+  // Check if teams plugin is enabled
+  const installedPlugins = await db.query.orgPlugins.findMany({
+    where: eq(orgPlugins.orgId, org.id),
+  });
+  const teamsEnabled = installedPlugins.some(p => p.pluginId === "teams" && p.enabled);
+
+  // Fetch all data in parallel
+  const [tasks, members, labels, teams] = await Promise.all([
+    getTasks(org.id),
     getOrgMembers(org.id),
+    getOrgLabels(org.id),
+    getOrgTeams(org.id),
   ]);
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
-          <p className="text-sm text-muted-foreground">
-            {issues.length} {issues.length === 1 ? "issue" : "issues"}
-          </p>
-        </div>
-        <CreateIssueDialog
-          orgId={org.id}
-          orgSlug={slug}
-          members={members}
-        />
-      </div>
-      <IssuesBoard issues={issues} orgSlug={slug} />
-    </div>
+    <TasksPage
+      orgId={org.id}
+      orgSlug={slug}
+      currentMemberId={membership.id}
+      tasks={tasks}
+      members={members}
+      labels={labels}
+      teams={teams}
+      teamsEnabled={teamsEnabled}
+    />
   );
 }
