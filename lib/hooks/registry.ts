@@ -65,6 +65,55 @@ export type HookEventMap = {
         orgId: string;
         pluginId: string;
     };
+
+    /** Fired after a team is successfully created. */
+    "team:created": {
+        orgId: string;
+        teamId: string;
+        name: string;
+        creatorId: string;
+    };
+
+    /** Fired after a team is successfully updated. */
+    "team:updated": {
+        orgId: string;
+        teamId: string;
+        name: string;
+        actorId: string;
+    };
+
+    /** Fired after a team is successfully deleted. */
+    "team:deleted": {
+        orgId: string;
+        teamId: string;
+        actorId: string;
+    };
+
+    /** Fired after a member is successfully added to a team. */
+    "team:member_added": {
+        orgId: string;
+        teamId: string;
+        memberId: string;
+        role: string;
+        actorId: string;
+    };
+
+    /** Fired after a member is successfully removed from a team. */
+    "team:member_removed": {
+        orgId: string;
+        teamId: string;
+        memberId: string;
+        actorId: string;
+    };
+
+    /** Fired after a team member's role is successfully updated. */
+    "team:member_role_updated": {
+        orgId: string;
+        teamId: string;
+        memberId: string;
+        role: string;
+        actorId: string;
+    };
 };
 
 export type HookEvent = keyof HookEventMap;

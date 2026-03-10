@@ -13,3 +13,4 @@ export {
 export { orgProfiles, orgPlugins } from "./orgs";
 export { memberProfiles } from "./members";
 export { issues, issueComments, issueActivity } from "./tasks";
+export { teams, teamMembers } from "./teams";

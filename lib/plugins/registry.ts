@@ -35,6 +35,17 @@ export const PLUGINS: Plugin[] = [
     version: "1.0.0",
     // No dependencies — Tasks is a root plugin.
   },
+  {
+    id: "teams",
+    name: "Teams",
+    description: "Divide your members into teams and appoint leaders",
+    slug: "teams",
+    icon: "Users",
+    plans: ["free", "plus", "enterprise"],
+    defaultEnabled: false,
+    category: "management",
+    version: "1.0.0",
+  },
   // future: chat, storage, notes, whiteboards, recruitment, finances
 ];
 
