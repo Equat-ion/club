@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { List, LayoutGrid } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreateTaskDialog } from "./create-task-dialog";
 import { TaskFilters } from "./task-filters";
 import { TaskGroupedView } from "./task-grouped-view";
 import { TaskFlatView } from "./task-flat-view";
+import { deleteTasks } from "@/actions/tasks";
 import type {
   TaskWithDetails,
   OrgMember,
@@ -20,6 +20,7 @@ interface TasksPageProps {
   orgId: string;
   orgSlug: string;
   currentMemberId: string;
+  currentUserRole: string;
   tasks: TaskWithDetails[];
   members: OrgMember[];
   labels: Label[];
@@ -40,6 +41,7 @@ export function TasksPage({
   orgId,
   orgSlug,
   currentMemberId,
+  currentUserRole,
   tasks,
   members,
   labels,
@@ -48,7 +50,8 @@ export function TasksPage({
 }: TasksPageProps) {
   const [tab, setTab] = useState<"all" | "mine">("all");
   const [filters, setFilters] = useState<TaskFilterState>(EMPTY_FILTERS);
-  const [view, setView] = useState<"grouped" | "flat">(() => {
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  const [view] = useState<"grouped" | "flat">(() => {
     if (typeof window !== "undefined") {
       return (
         (localStorage.getItem("tasks-view-preference") as
@@ -59,16 +62,49 @@ export function TasksPage({
     return "grouped";
   });
 
-  const handleViewChange = (newView: "grouped" | "flat") => {
-    setView(newView);
-    localStorage.setItem("tasks-view-preference", newView);
-  };
-
   const handleFilterChange = (key: keyof TaskFilterState, value: string | null) => {
     setFilters((prev: TaskFilterState) => ({ ...prev, [key]: value }));
   };
 
   const clearFilters = () => setFilters(EMPTY_FILTERS);
+  const canBulkDelete = currentUserRole === "owner" || currentUserRole === "admin";
+
+  const handleTaskSelectionChange = (taskId: string, selected: boolean) => {
+    setSelectedTaskIds((prev) => {
+      if (selected) {
+        return prev.includes(taskId) ? prev : [...prev, taskId];
+      }
+
+      return prev.filter((id) => id !== taskId);
+    });
+  };
+
+  const handleSelectVisibleTasks = (taskIds: string[], selected: boolean) => {
+    setSelectedTaskIds((prev) => {
+      const next = new Set(prev);
+      if (selected) {
+        for (const taskId of taskIds) next.add(taskId);
+      } else {
+        for (const taskId of taskIds) next.delete(taskId);
+      }
+      return Array.from(next);
+    });
+  };
+
+  const handleBulkDelete = async (taskIds: string[]) => {
+    const result = await deleteTasks(orgId, taskIds);
+
+    if (!result.success) {
+      toast.error(result.error || "Failed to delete tasks");
+      return false;
+    }
+
+    setSelectedTaskIds((prev) => prev.filter((taskId) => !taskIds.includes(taskId)));
+    toast.success(
+      `Deleted ${result.deletedCount} task${result.deletedCount === 1 ? "" : "s"}`
+    );
+    return true;
+  };
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
@@ -120,7 +156,7 @@ export function TasksPage({
           </TabsList>
         </Tabs>
 
-        <div className="flex items-center gap-1 bg-muted/50 p-0.5 rounded-md mb-2">
+        {/*<div className="flex items-center gap-1 bg-muted/50 p-0.5 rounded-md mb-2">
           <Button
             variant={view === "flat" ? "secondary" : "ghost"}
             size="sm"
@@ -139,7 +175,7 @@ export function TasksPage({
             <LayoutGrid className="h-3.5 w-3.5" />
             Grouped
           </Button>
-        </div>
+        </div>*/}
       </div>
 
       {/* Filters row */}
@@ -148,6 +184,9 @@ export function TasksPage({
           filters={filters}
           onFilterChange={handleFilterChange}
           onClearFilters={clearFilters}
+          canBulkDelete={canBulkDelete}
+          selectedTaskIds={selectedTaskIds}
+          onBulkDeleteSelected={handleBulkDelete}
           members={members}
           labels={labels}
           teams={teams}
@@ -158,9 +197,22 @@ export function TasksPage({
       {/* Task list */}
       <div className="flex-1 overflow-auto px-6 pt-4 pb-6">
         {view === "grouped" ? (
-          <TaskGroupedView tasks={filteredTasks} orgSlug={orgSlug} />
+          <TaskGroupedView
+            tasks={filteredTasks}
+            orgSlug={orgSlug}
+            canSelectTasks={canBulkDelete}
+            selectedTaskIds={selectedTaskIds}
+            onTaskSelectionChange={handleTaskSelectionChange}
+          />
         ) : (
-          <TaskFlatView tasks={filteredTasks} orgSlug={orgSlug} />
+          <TaskFlatView
+            tasks={filteredTasks}
+            orgSlug={orgSlug}
+            canSelectTasks={canBulkDelete}
+            selectedTaskIds={selectedTaskIds}
+            onTaskSelectionChange={handleTaskSelectionChange}
+            onSelectVisibleTasks={handleSelectVisibleTasks}
+          />
         )}
       </div>
     </div>

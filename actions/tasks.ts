@@ -555,7 +555,16 @@ export async function updateTask(
     const membership = await verifyMembership(current.orgId, session.user.id);
 
     // Build update object
-    const updates: Record<string, any> = { updatedAt: new Date() };
+    const updates: {
+      updatedAt: Date;
+      title?: string;
+      description?: string;
+      status?: TaskStatus;
+      priority?: TaskPriority;
+      assigneeId?: string | null;
+      teamId?: string | null;
+      dueDate?: string | null;
+    } = { updatedAt: new Date() };
     if (data.title !== undefined) updates.title = data.title;
     if (data.description !== undefined) updates.description = data.description;
     if (data.status !== undefined) updates.status = data.status;
@@ -645,6 +654,41 @@ export async function updateTask(
 /**
  * Delete a task.
  */
+async function deleteTasksForOrg(orgId: string, taskIds: string[], actorId: string) {
+  const membership = await verifyMembership(orgId, actorId);
+
+  if (membership.role !== "owner" && membership.role !== "admin") {
+    throw new Error("You don't have permission to delete tasks");
+  }
+
+  const uniqueTaskIds = [...new Set(taskIds.filter(Boolean))];
+  if (uniqueTaskIds.length === 0) return 0;
+
+  const targetTasks = await db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.orgId, orgId), inArray(tasks.id, uniqueTaskIds)));
+
+  if (targetTasks.length === 0) return 0;
+
+  const targetTaskIds = targetTasks.map((task) => task.id);
+
+  await db
+    .delete(tasks)
+    .where(and(eq(tasks.orgId, orgId), inArray(tasks.id, targetTaskIds)));
+
+  for (const task of targetTasks) {
+    await hooksRegistry.emit("task:deleted", {
+      orgId,
+      issueId: task.id,
+      actorId,
+    });
+  }
+
+  revalidatePath("/app");
+  return targetTaskIds.length;
+}
+
 export async function deleteTask(taskId: string) {
   try {
     const session = await getAuthenticatedUser();
@@ -654,24 +698,28 @@ export async function deleteTask(taskId: string) {
     });
     if (!task) throw new Error("Task not found");
 
-    const membership = await verifyMembership(task.orgId, session.user.id);
+    const deletedCount = await deleteTasksForOrg(task.orgId, [taskId], session.user.id);
+    if (deletedCount === 0) throw new Error("Task not found");
 
-    if (membership.role !== "owner" && membership.role !== "admin") {
-      throw new Error("You don't have permission to delete tasks");
-    }
-
-    await db.delete(tasks).where(eq(tasks.id, taskId));
-
-    await hooksRegistry.emit("task:deleted", {
-      orgId: task.orgId,
-      issueId: taskId,
-      actorId: session.user.id,
-    });
-
-    revalidatePath("/app");
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to delete task";
+    return { success: false, error: message };
+  }
+}
+
+export async function deleteTasks(orgId: string, taskIds: string[]) {
+  try {
+    const session = await getAuthenticatedUser();
+    const deletedCount = await deleteTasksForOrg(orgId, taskIds, session.user.id);
+
+    if (deletedCount === 0) {
+      throw new Error("Tasks not found");
+    }
+
+    return { success: true, deletedCount };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to delete tasks";
     return { success: false, error: message };
   }
 }

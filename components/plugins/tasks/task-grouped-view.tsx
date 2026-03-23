@@ -2,18 +2,26 @@
 
 import { useState, useMemo } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { TaskRow } from "./task-row";
-import { TASK_STATUSES, type TaskWithDetails, type TaskStatus } from "@/lib/plugins/tasks-types";
+import { TASK_STATUSES, type TaskWithDetails } from "@/lib/plugins/tasks-types";
 
 interface TaskGroupedViewProps {
   tasks: TaskWithDetails[];
   orgSlug: string;
+  canSelectTasks: boolean;
+  selectedTaskIds: string[];
+  onTaskSelectionChange: (taskId: string, selected: boolean) => void;
 }
 
-export function TaskGroupedView({ tasks, orgSlug }: TaskGroupedViewProps) {
+export function TaskGroupedView({
+  tasks,
+  orgSlug,
+  canSelectTasks,
+  selectedTaskIds,
+  onTaskSelectionChange,
+}: TaskGroupedViewProps) {
   const tasksByStatus = useMemo(() => {
     const groups: Record<string, TaskWithDetails[]> = {};
     for (const status of TASK_STATUSES) {
@@ -42,6 +50,9 @@ export function TaskGroupedView({ tasks, orgSlug }: TaskGroupedViewProps) {
             status={status} 
             tasks={groupTasks} 
             orgSlug={orgSlug}
+            canSelectTasks={canSelectTasks}
+            selectedTaskIds={selectedTaskIds}
+            onTaskSelectionChange={onTaskSelectionChange}
             defaultOpen={["backlog", "todo", "in_progress"].includes(status.value)}
           />
         );
@@ -54,11 +65,17 @@ function StatusGroup({
   status, 
   tasks, 
   orgSlug, 
+  canSelectTasks,
+  selectedTaskIds,
+  onTaskSelectionChange,
   defaultOpen 
 }: { 
   status: typeof TASK_STATUSES[0], 
   tasks: TaskWithDetails[], 
   orgSlug: string,
+  canSelectTasks: boolean,
+  selectedTaskIds: string[],
+  onTaskSelectionChange: (taskId: string, selected: boolean) => void,
   defaultOpen: boolean
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -79,7 +96,15 @@ function StatusGroup({
       <CollapsibleContent className="pt-1">
         <div className="flex flex-col">
           {tasks.map((task) => (
-            <TaskRow key={task.id} task={task} orgSlug={orgSlug} />
+            <TaskRow
+              key={task.id}
+              task={task}
+              orgSlug={orgSlug}
+              showCheckbox
+              checkboxChecked={selectedTaskIds.includes(task.id)}
+              checkboxDisabled={!canSelectTasks}
+              onCheckboxChange={(selected) => onTaskSelectionChange(task.id, selected)}
+            />
           ))}
         </div>
       </CollapsibleContent>

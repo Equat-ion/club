@@ -63,6 +63,7 @@ export default async function TasksMainPage({
       orgId={org.id}
       orgSlug={slug}
       currentMemberId={membership.id}
+      currentUserRole={membership.role}
       tasks={tasks}
       members={members}
       labels={labels}
