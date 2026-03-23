@@ -97,11 +97,3 @@ The plugin respects the core "Admin", "Lead", and "Member" roles.
 *   **Auth:** Uses `better-auth` for session management and permission checks (`auth.api.getSession`).
 *   **Plugin System:** Task Management is the "Default" plugin enabled for all organizations on the **Free** plan. It serves as the baseline for the platform's utility.
 *   **Members:** The assignee picker fetches real-time data from the organization's member list using the `getOrgMembers` action.
-
-## 6. Future Roadmap
-
-*   **Projects/Labels:** Grouping issues into Projects or tagging them with custom Labels.
-*   **Rich Text / Markdown:** Enhancing the description and comments with a full markdown editor (e.g., TipTap).
-*   **Real-time Updates:** Integrating Supabase Realtime or Ably to see status changes without page refreshes.
-*   **Global Search:** Searching issues across all organizations from the command palette.
-*   **Custom Statuses:** Allowing organizations to define their own workflow stages.
