@@ -6,9 +6,13 @@ import type { TaskActivityEntry } from "@/lib/plugins/tasks-types";
 
 interface TaskActivityProps {
   activity: TaskActivityEntry[];
+  teamsEnabled?: boolean;
 }
 
-export function TaskActivity({ activity }: TaskActivityProps) {
+export function TaskActivity({ activity, teamsEnabled = false }: TaskActivityProps) {
+  const filteredActivity = teamsEnabled
+    ? activity
+    : activity.filter((item) => item.type !== "team_assignment");
   const renderActivityDescription = (item: TaskActivityEntry) => {
     const actorName = item.actor.name;
 
@@ -73,7 +77,7 @@ export function TaskActivity({ activity }: TaskActivityProps) {
 
   return (
     <div className="space-y-6">
-      {activity.map((item) => (
+      {filteredActivity.map((item) => (
         <div key={item.id} className="flex gap-4">
           <Avatar className="h-6 w-6">
             <AvatarImage src={item.actor.image || undefined} />
@@ -92,7 +96,7 @@ export function TaskActivity({ activity }: TaskActivityProps) {
         </div>
       ))}
 
-      {activity.length === 0 && (
+      {filteredActivity.length === 0 && (
         <div className="text-center py-10 text-muted-foreground text-sm">
           No activity recorded yet.
         </div>

@@ -25,6 +25,7 @@ interface TaskRowProps {
   checkboxChecked?: boolean;
   checkboxDisabled?: boolean;
   onCheckboxChange?: (checked: boolean) => void;
+  teamsEnabled?: boolean;
 }
 
 const priorityIcons: Record<TaskPriority, { icon: LucideIcon; color: string }> = {
@@ -39,6 +40,8 @@ export const TASK_ROW_TEMPLATE_WITH_CHECKBOX =
   "grid-cols-[2rem_2rem_6.75rem_minmax(0,1fr)_6rem_6rem_minmax(10rem,1.2fr)_5rem_7rem]";
 export const TASK_ROW_TEMPLATE_NO_CHECKBOX =
   "grid-cols-[2rem_6.75rem_minmax(0,1fr)_6rem_6rem_minmax(10rem,1.2fr)_5rem_7rem]";
+export const TASK_ROW_TEMPLATE_NO_TEAM =
+  "grid-cols-[2rem_2rem_6.75rem_minmax(0,1fr)_6rem_minmax(10rem,1.2fr)_5rem_7rem]";
 
 export function TaskRow({
   task,
@@ -47,6 +50,7 @@ export function TaskRow({
   checkboxChecked = false,
   checkboxDisabled = true,
   onCheckboxChange,
+  teamsEnabled = false,
 }: TaskRowProps) {
   const PriorityIcon = priorityIcons[task.priority as TaskPriority]?.icon || Minus;
   const priorityColor = priorityIcons[task.priority as TaskPriority]?.color || "text-muted-foreground";
@@ -66,7 +70,11 @@ export function TaskRow({
       className={cn(
         "grid h-11 items-center gap-x-4 border-b border-muted/30 px-4 transition-colors last:border-0 hover:bg-muted/50",
         checkboxChecked && "bg-muted/30 hover:bg-muted/40",
-        showCheckbox ? TASK_ROW_TEMPLATE_WITH_CHECKBOX : TASK_ROW_TEMPLATE_NO_CHECKBOX
+        showCheckbox
+          ? teamsEnabled
+            ? TASK_ROW_TEMPLATE_WITH_CHECKBOX
+            : TASK_ROW_TEMPLATE_NO_TEAM
+          : TASK_ROW_TEMPLATE_NO_CHECKBOX
       )}
     >
       {showCheckbox ? (
@@ -113,7 +121,7 @@ export function TaskRow({
           <div />
         )}
 
-        {task.team ? (
+        {teamsEnabled && task.team ? (
           <Badge
             variant="outline"
             className="h-5 flex-shrink-0 border-muted/50 px-1.5 text-[10px] font-normal text-muted-foreground"

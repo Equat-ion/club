@@ -1,57 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { 
-  ArrowLeft, 
-  Calendar as CalendarIcon, 
-  Check, 
-  ChevronLeft, 
-  MoreHorizontal, 
-  Trash2, 
-  User, 
-  Users,
-  Plus,
-  MessageSquare,
-  History
-} from "lucide-react";
-import { format, isPast } from "date-fns";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { useMemo, useRef, useState } from "react";
+import { MessageSquare, History } from "lucide-react";
+import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { 
-  AlertDialog, 
-  AlertDialogAction, 
-  AlertDialogCancel, 
-  AlertDialogContent, 
-  AlertDialogDescription, 
-  AlertDialogFooter, 
-  AlertDialogHeader, 
-  AlertDialogTitle, 
-  AlertDialogTrigger 
-} from "@/components/ui/alert-dialog";
-import { deleteTask, updateTask } from "@/actions/tasks";
+import { updateTask } from "@/actions/tasks";
 import { toast } from "sonner";
-import type { 
-  TaskWithDetails, 
-  TaskComment, 
-  TaskActivityEntry, 
-  OrgMember, 
-  Label, 
+import type {
+  TaskWithDetails,
+  TaskComment,
+  TaskActivityEntry,
+  OrgMember,
+  Label,
   OrgTeam,
   TaskStatus,
-  TaskPriority 
+  TaskPriority,
 } from "@/lib/plugins/tasks-types";
 import { TaskMetadataRow } from "./task-metadata-row";
 import { TaskDiscussion } from "./task-discussion";
@@ -65,9 +32,11 @@ interface TaskDetailProps {
   labels: Label[];
   teams: OrgTeam[];
   teamsEnabled: boolean;
-  orgSlug: string;
-  currentUserId: string;
-  currentUserRole: string;
+  currentUser: {
+    id: string;
+    name: string;
+    image: string | null;
+  };
 }
 
 export function TaskDetail({
@@ -78,15 +47,83 @@ export function TaskDetail({
   labels,
   teams,
   teamsEnabled,
-  orgSlug,
-  currentUserId,
-  currentUserRole,
+  currentUser,
 }: TaskDetailProps) {
-  const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [taskState, setTaskState] = useState(task);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description || "");
+  const taskRef = useRef(task);
+  const mutationVersionRef = useRef(0);
+
+  const membersById = useMemo(() => {
+    return new Map(members.map((member) => [member.id, member]));
+  }, [members]);
+
+  const teamsById = useMemo(() => {
+    return new Map(teams.map((team) => [team.id, team]));
+  }, [teams]);
+
+  const labelsById = useMemo(() => {
+    return new Map(labels.map((label) => [label.id, label]));
+  }, [labels]);
+
+  const applyPatch = (
+    baseTask: TaskWithDetails,
+    patch: {
+      title?: string;
+      description?: string;
+      status?: TaskStatus;
+      priority?: TaskPriority;
+      assigneeId?: string | null;
+      teamId?: string | null;
+      dueDate?: string | null;
+      labelIds?: string[];
+    }
+  ): TaskWithDetails => {
+    const nextAssigneeId =
+      patch.assigneeId !== undefined ? patch.assigneeId : baseTask.assigneeId;
+    const nextTeamId = patch.teamId !== undefined ? patch.teamId : baseTask.teamId;
+    const nextLabels =
+      patch.labelIds !== undefined
+        ? patch.labelIds
+            .map((labelId) => labelsById.get(labelId))
+            .filter((label): label is Label => Boolean(label))
+        : baseTask.labels;
+
+    return {
+      ...baseTask,
+      title: patch.title !== undefined ? patch.title : baseTask.title,
+      description:
+        patch.description !== undefined ? patch.description : baseTask.description,
+      status: patch.status !== undefined ? patch.status : baseTask.status,
+      priority: patch.priority !== undefined ? patch.priority : baseTask.priority,
+      assigneeId: nextAssigneeId,
+      teamId: nextTeamId,
+      dueDate: patch.dueDate !== undefined ? patch.dueDate : baseTask.dueDate,
+      assignee:
+        nextAssigneeId === null
+          ? null
+          : nextAssigneeId
+            ? {
+                id: nextAssigneeId,
+                name: membersById.get(nextAssigneeId)?.name ?? baseTask.assignee?.name ?? "Unknown",
+                image: membersById.get(nextAssigneeId)?.image ?? baseTask.assignee?.image ?? null,
+              }
+            : baseTask.assignee,
+      team:
+        nextTeamId === null
+          ? null
+          : nextTeamId
+            ? {
+                id: nextTeamId,
+                name: teamsById.get(nextTeamId)?.name ?? baseTask.team?.name ?? "Unknown",
+              }
+            : baseTask.team,
+      labels: nextLabels,
+      updatedAt: new Date(),
+    };
+  };
 
   const handleUpdate = async (data: {
     title?: string;
@@ -98,95 +135,57 @@ export function TaskDetail({
     dueDate?: string | null;
     labelIds?: string[];
   }) => {
+    const mutationVersion = mutationVersionRef.current + 1;
+    mutationVersionRef.current = mutationVersion;
+
+    const previousTask = taskRef.current;
+    const optimisticTask = applyPatch(previousTask, data);
+    taskRef.current = optimisticTask;
+    setTaskState(optimisticTask);
+
+    if (data.title !== undefined) {
+      setTitle(data.title);
+    }
+    if (data.description !== undefined) {
+      setDescription(data.description || "");
+    }
+
     const res = await updateTask(task.id, data);
     if (!res.success) {
+      if (mutationVersionRef.current === mutationVersion) {
+        taskRef.current = previousTask;
+        setTaskState(previousTask);
+        setTitle(previousTask.title);
+        setDescription(previousTask.description || "");
+      }
       toast.error(res.error || "Update failed");
-    }
-  };
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    const res = await deleteTask(task.id);
-    if (res.success) {
-      toast.success("Task deleted");
-      router.push(`/app/${orgSlug}/tasks`);
-    } else {
-      toast.error(res.error || "Failed to delete task");
-      setIsDeleting(false);
     }
   };
 
   const handleTitleBlur = () => {
     setIsEditingTitle(false);
-    if (title !== task.title) {
+    if (title !== taskRef.current.title) {
       handleUpdate({ title });
     }
   };
 
   const handleDescriptionBlur = () => {
-    if (description !== (task.description || "")) {
+    if (description !== (taskRef.current.description || "")) {
       handleUpdate({ description });
     }
   };
 
-  const isAdmin = currentUserRole === "owner" || currentUserRole === "admin";
-
   return (
     <div className="max-w-4xl mx-auto py-8 px-6 space-y-8">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted-foreground">
-          <Link href={`/app/${orgSlug}/tasks`}>
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Tasks
-          </Link>
-        </Button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <DropdownMenuItem 
-                  className="text-destructive focus:text-destructive"
-                  onSelect={(e) => e.preventDefault()}
-                  disabled={!isAdmin}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Task
-                </DropdownMenuItem>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete this task and all its comments. This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
       <div className="space-y-6">
         <TaskMetadataRow
-          task={task}
+          task={taskState}
           members={members}
           labels={labels}
           teams={teams}
           teamsEnabled={teamsEnabled}
           onUpdate={handleUpdate}
-          orgId={task.orgId}
+          orgId={taskState.orgId}
         />
 
         <div className="group relative">
@@ -200,7 +199,7 @@ export function TaskDetail({
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleTitleBlur();
                 if (e.key === "Escape") {
-                  setTitle(task.title);
+                  setTitle(taskRef.current.title);
                   setIsEditingTitle(false);
                 }
               }}
@@ -210,77 +209,25 @@ export function TaskDetail({
               className="text-4xl font-bold cursor-text hover:text-foreground/80 transition-colors"
               onClick={() => setIsEditingTitle(true)}
             >
-              {task.title}
+              {taskState.title}
             </h1>
           )}
         </div>
 
         <div className="flex flex-col gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span>Assigned to</span>
-              <div className="flex items-center gap-2 text-foreground font-medium">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage src={task.assignee?.image || undefined} />
-                  <AvatarFallback className="text-[10px]">
-                    {task.assignee ? task.assignee.name.substring(0, 2).toUpperCase() : "?"}
-                  </AvatarFallback>
-                </Avatar>
-                {task.assignee?.name || "Unassigned"}
-              </div>
-            </div>
-
-            {teamsEnabled && (
-              <div className="flex items-center gap-2">
-                <span>Team</span>
-                <Badge variant="secondary" className="font-medium bg-muted/50">
-                  {task.team?.name || "No team"}
-                </Badge>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span>Labels</span>
-              <div className="flex flex-wrap gap-1.5">
-                {task.labels.map(label => (
-                  <Badge 
-                    key={label.id} 
-                    className="h-6 px-1.5 gap-1 font-normal"
-                    style={{ backgroundColor: `${label.color}20`, color: label.color, border: `1px solid ${label.color}40` }}
-                  >
-                    {label.name}
-                  </Badge>
-                ))}
-                {task.labels.length === 0 && <span className="text-muted-foreground/50">None</span>}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span>Due</span>
-              <span className={cn(
-                "font-medium",
-                task.dueDate && isPast(new Date(task.dueDate)) && !["done", "cancelled"].includes(task.status) ? "text-destructive" : "text-foreground"
-              )}>
-                {task.dueDate ? format(new Date(task.dueDate), "PPP") : "No due date"}
-              </span>
-            </div>
-          </div>
-
           <div className="flex items-center gap-2 text-xs opacity-60">
             <span>Created by</span>
             <div className="flex items-center gap-1.5">
               <Avatar className="h-4 w-4">
-                <AvatarImage src={task.creator.image || undefined} />
+                <AvatarImage src={taskState.creator.image || undefined} />
                 <AvatarFallback className="text-[8px]">
-                  {task.creator.name.substring(0, 2).toUpperCase()}
+                  {taskState.creator.name.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="font-medium text-foreground">{task.creator.name}</span>
+              <span className="font-medium text-foreground">{taskState.creator.name}</span>
             </div>
             <span>•</span>
-            <span>{format(new Date(task.createdAt), "PPP")}</span>
+            <span>{format(new Date(taskState.createdAt), "PPP")}</span>
           </div>
         </div>
       </div>
@@ -315,10 +262,14 @@ export function TaskDetail({
         </TabsList>
         <div className="pt-6">
           <TabsContent value="discussion">
-            <TaskDiscussion taskId={task.id} comments={comments} />
+            <TaskDiscussion
+              taskId={taskState.id}
+              comments={comments}
+              currentUser={currentUser}
+            />
           </TabsContent>
           <TabsContent value="activity">
-            <TaskActivity activity={activity} />
+            <TaskActivity activity={activity} teamsEnabled={teamsEnabled} />
           </TabsContent>
         </div>
       </Tabs>

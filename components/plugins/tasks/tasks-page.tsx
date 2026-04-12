@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CreateTaskDialog } from "./create-task-dialog";
 import { TaskFilters } from "./task-filters";
-import { TaskGroupedView } from "./task-grouped-view";
+// import { TaskGroupedView } from "./task-grouped-view";
 import { TaskFlatView } from "./task-flat-view";
 import { deleteTasks } from "@/actions/tasks";
 import type {
@@ -51,16 +51,22 @@ export function TasksPage({
   const [tab, setTab] = useState<"all" | "mine">("all");
   const [filters, setFilters] = useState<TaskFilterState>(EMPTY_FILTERS);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
-  const [view] = useState<"grouped" | "flat">(() => {
-    if (typeof window !== "undefined") {
-      return (
-        (localStorage.getItem("tasks-view-preference") as
-          | "grouped"
-          | "flat") || "grouped"
-      );
-    }
-    return "grouped";
-  });
+  const [tasksState, setTasksState] = useState<TaskWithDetails[]>(tasks);
+
+  useEffect(() => {
+    setTasksState(tasks);
+  }, [tasks]);
+
+  // const [view] = useState<"grouped" | "flat">(() => {
+  //   if (typeof window !== "undefined") {
+  //     return (
+  //       (localStorage.getItem("tasks-view-preference") as
+  //         | "grouped"
+  //         | "flat") || "grouped"
+  //     );
+  //   }
+  //   return "grouped";
+  // });
 
   const handleFilterChange = (key: keyof TaskFilterState, value: string | null) => {
     setFilters((prev: TaskFilterState) => ({ ...prev, [key]: value }));
@@ -100,6 +106,7 @@ export function TasksPage({
     }
 
     setSelectedTaskIds((prev) => prev.filter((taskId) => !taskIds.includes(taskId)));
+    setTasksState((prev) => prev.filter((task) => !taskIds.includes(task.id)));
     toast.success(
       `Deleted ${result.deletedCount} task${result.deletedCount === 1 ? "" : "s"}`
     );
@@ -107,7 +114,7 @@ export function TasksPage({
   };
 
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
+    return tasksState.filter((task) => {
       if (tab === "mine" && task.assigneeId !== currentMemberId) return false;
       if (filters.status && task.status !== filters.status) return false;
       if (filters.priority && task.priority !== filters.priority) return false;
@@ -116,11 +123,11 @@ export function TasksPage({
       if (filters.label && !task.labels.some((l) => l.id === filters.label)) return false;
       return true;
     });
-  }, [tasks, tab, currentMemberId, filters]);
+  }, [tasksState, tab, currentMemberId, filters]);
 
   const myTasksCount = useMemo(
-    () => tasks.filter((t) => t.assigneeId === currentMemberId).length,
-    [tasks, currentMemberId]
+    () => tasksState.filter((t) => t.assigneeId === currentMemberId).length,
+    [tasksState, currentMemberId]
   );
 
   return (
@@ -196,7 +203,7 @@ export function TasksPage({
 
       {/* Task list */}
       <div className="flex-1 overflow-auto px-6 pt-4 pb-6">
-        {view === "grouped" ? (
+        {/* {view === "grouped" ? (
           <TaskGroupedView
             tasks={filteredTasks}
             orgSlug={orgSlug}
@@ -204,16 +211,17 @@ export function TasksPage({
             selectedTaskIds={selectedTaskIds}
             onTaskSelectionChange={handleTaskSelectionChange}
           />
-        ) : (
-          <TaskFlatView
-            tasks={filteredTasks}
-            orgSlug={orgSlug}
-            canSelectTasks={canBulkDelete}
-            selectedTaskIds={selectedTaskIds}
-            onTaskSelectionChange={handleTaskSelectionChange}
-            onSelectVisibleTasks={handleSelectVisibleTasks}
-          />
-        )}
+        ) : ( */}
+        <TaskFlatView
+          tasks={filteredTasks}
+          orgSlug={orgSlug}
+          canSelectTasks={canBulkDelete}
+          selectedTaskIds={selectedTaskIds}
+          onTaskSelectionChange={handleTaskSelectionChange}
+          onSelectVisibleTasks={handleSelectVisibleTasks}
+          teamsEnabled={teamsEnabled}
+        />
+        {/* )} */}
       </div>
     </div>
   );

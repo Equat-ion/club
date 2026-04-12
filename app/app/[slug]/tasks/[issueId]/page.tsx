@@ -80,9 +80,11 @@ export default async function TaskDetailPage({
       labels={labels}
       teams={teams}
       teamsEnabled={teamsEnabled}
-      orgSlug={slug}
-      currentUserId={session.user.id}
-      currentUserRole={membership.role}
+      currentUser={{
+        id: session.user.id,
+        name: session.user.name,
+        image: session.user.image ?? null,
+      }}
     />
   );
 }

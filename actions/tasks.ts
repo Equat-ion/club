@@ -26,7 +26,12 @@ import type {
   Label,
   OrgTeam,
 } from "@/lib/plugins/tasks-types";
-import { initHooks, hooksRegistry } from "@/lib/hooks";
+import {
+  initHooks,
+  hooksRegistry,
+  type HookEvent,
+  type HookPayload,
+} from "@/lib/hooks";
 
 // Register all plugin hook handlers once at module load.
 initHooks();
@@ -54,7 +59,9 @@ async function verifyMembership(orgId: string, userId: string) {
 /**
  * Atomically increment the org's issue counter and return the new identifier.
  */
-async function generateTaskIdentifier(orgId: string): Promise<string> {
+async function generateTaskIdentifier(
+  orgId: string
+): Promise<{ identifier: string; orgSlug: string }> {
   const org = await db.query.organization.findFirst({
     where: eq(organization.id, orgId),
   });
@@ -74,7 +81,25 @@ async function generateTaskIdentifier(orgId: string): Promise<string> {
     throw new Error("Failed to generate task identifier");
 
   const prefix = org.slug.toUpperCase().replace(/-/g, "");
-  return `${prefix}-${counter}`;
+  return {
+    identifier: `${prefix}-${counter}`,
+    orgSlug: org.slug,
+  };
+}
+
+async function getOrgSlugById(orgId: string): Promise<string> {
+  const org = await db.query.organization.findFirst({
+    where: eq(organization.id, orgId),
+    columns: { slug: true },
+  });
+  if (!org) throw new Error("Organization not found");
+  return org.slug;
+}
+
+function emitHook<E extends HookEvent>(event: E, payload: HookPayload<E>): void {
+  void hooksRegistry.emit(event, payload).catch((error) => {
+    console.error(`[hooks] failed to emit ${event}:`, error);
+  });
 }
 
 // ============================================================
@@ -475,7 +500,7 @@ export async function createTask(
     const session = await getAuthenticatedUser();
     await verifyMembership(orgId, session.user.id);
 
-    const identifier = await generateTaskIdentifier(orgId);
+    const { identifier, orgSlug } = await generateTaskIdentifier(orgId);
     const taskId = createId();
 
     await db.transaction(async (tx) => {
@@ -512,7 +537,7 @@ export async function createTask(
       });
     });
 
-    await hooksRegistry.emit("task:created", {
+    emitHook("task:created", {
       orgId,
       issueId: taskId,
       identifier,
@@ -520,7 +545,8 @@ export async function createTask(
       creatorId: session.user.id,
     });
 
-    revalidatePath(`/app/${orgId}/tasks`);
+    revalidatePath(`/app/${orgSlug}/tasks`);
+    revalidatePath(`/app/${orgSlug}/tasks/${taskId}`);
     return { success: true, taskId, identifier };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create task";
@@ -553,6 +579,7 @@ export async function updateTask(
     if (!current) throw new Error("Task not found");
 
     const membership = await verifyMembership(current.orgId, session.user.id);
+    const orgSlug = await getOrgSlugById(current.orgId);
 
     // Build update object
     const updates: {
@@ -572,6 +599,8 @@ export async function updateTask(
     if (data.assigneeId !== undefined) updates.assigneeId = data.assigneeId;
     if (data.teamId !== undefined) updates.teamId = data.teamId;
     if (data.dueDate !== undefined) updates.dueDate = data.dueDate;
+
+    const hookEvents: Array<{ event: HookEvent; payload: HookPayload<HookEvent> }> = [];
 
     await db.transaction(async (tx) => {
       if (Object.keys(updates).length > 1) {
@@ -595,32 +624,41 @@ export async function updateTask(
       const activityEntries = [];
       if (data.status && data.status !== current.status) {
         activityEntries.push({ type: "status_change", from: current.status, to: data.status });
-        await hooksRegistry.emit("task:status_changed", {
+        hookEvents.push({
+          event: "task:status_changed",
+          payload: {
           orgId: current.orgId,
           taskId,
           fromStatus: current.status,
           toStatus: data.status,
           memberId: membership.id,
+          },
         });
       }
       if (data.assigneeId !== undefined && data.assigneeId !== current.assigneeId) {
         activityEntries.push({ type: "assignment", from: current.assigneeId, to: data.assigneeId });
-        await hooksRegistry.emit("task:assigned", {
+        hookEvents.push({
+          event: "task:assigned",
+          payload: {
           orgId: current.orgId,
           taskId,
           fromMemberId: current.assigneeId,
           toMemberId: data.assigneeId,
           actorId: session.user.id,
+          },
         });
       }
       if (data.teamId !== undefined && data.teamId !== current.teamId) {
         activityEntries.push({ type: "team_assignment", from: current.teamId, to: data.teamId });
-        await hooksRegistry.emit("task:team_assigned", {
+        hookEvents.push({
+          event: "task:team_assigned",
+          payload: {
           orgId: current.orgId,
           taskId,
           fromTeamId: current.teamId,
           toTeamId: data.teamId,
           actorId: session.user.id,
+          },
         });
       }
 
@@ -636,14 +674,19 @@ export async function updateTask(
       }
     });
 
-    await hooksRegistry.emit("task:updated", {
+    for (const hookEvent of hookEvents) {
+      emitHook(hookEvent.event, hookEvent.payload);
+    }
+
+    emitHook("task:updated", {
       orgId: current.orgId,
       issueId: taskId,
       changes: data,
       actorId: session.user.id,
     });
 
-    revalidatePath("/app");
+    revalidatePath(`/app/${orgSlug}/tasks`);
+    revalidatePath(`/app/${orgSlug}/tasks/${taskId}`);
     return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to update task";
@@ -678,14 +721,15 @@ async function deleteTasksForOrg(orgId: string, taskIds: string[], actorId: stri
     .where(and(eq(tasks.orgId, orgId), inArray(tasks.id, targetTaskIds)));
 
   for (const task of targetTasks) {
-    await hooksRegistry.emit("task:deleted", {
+    emitHook("task:deleted", {
       orgId,
       issueId: task.id,
       actorId,
     });
   }
 
-  revalidatePath("/app");
+  const orgSlug = await getOrgSlugById(orgId);
+  revalidatePath(`/app/${orgSlug}/tasks`);
   return targetTaskIds.length;
 }
 
@@ -773,6 +817,7 @@ export async function addComment(taskId: string, body: string) {
     if (!task) throw new Error("Task not found");
 
     await verifyMembership(task.orgId, session.user.id);
+    const orgSlug = await getOrgSlugById(task.orgId);
 
     const commentId = createId();
 
@@ -792,7 +837,7 @@ export async function addComment(taskId: string, body: string) {
       toValue: commentId,
     });
 
-    revalidatePath("/app");
+    revalidatePath(`/app/${orgSlug}/tasks/${taskId}`);
     return { success: true, commentId };
   } catch (error) {
     return { success: false, error: "Failed to add comment" };

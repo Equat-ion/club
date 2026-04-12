@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -12,23 +12,62 @@ import type { TaskComment } from "@/lib/plugins/tasks-types";
 interface TaskDiscussionProps {
   taskId: string;
   comments: TaskComment[];
+  currentUser: {
+    id: string;
+    name: string;
+    image: string | null;
+  };
 }
 
-export function TaskDiscussion({ taskId, comments }: TaskDiscussionProps) {
+export function TaskDiscussion({ taskId, comments, currentUser }: TaskDiscussionProps) {
   const [body, setBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [commentList, setCommentList] = useState<TaskComment[]>(comments);
+
+  useEffect(() => {
+    setCommentList(comments);
+  }, [comments]);
 
   const handleSubmit = async () => {
-    if (!body.trim()) return;
+    const trimmedBody = body.trim();
+    if (!trimmedBody) return;
+
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticComment: TaskComment = {
+      id: optimisticId,
+      taskId,
+      body: trimmedBody,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      author: {
+        id: currentUser.id,
+        name: currentUser.name,
+        image: currentUser.image,
+      },
+    };
+
+    setCommentList((prev) => [...prev, optimisticComment]);
+    setBody("");
 
     setIsSubmitting(true);
-    const res = await addComment(taskId, body);
+    const res = await addComment(taskId, trimmedBody);
     setIsSubmitting(false);
 
     if (res.success) {
-      setBody("");
+      setCommentList((prev) =>
+        prev.map((comment) =>
+          comment.id === optimisticId
+            ? {
+                ...comment,
+                id: res.commentId || optimisticId,
+              }
+            : comment
+        )
+      );
       toast.success("Comment posted");
     } else {
+      setCommentList((prev) => prev.filter((comment) => comment.id !== optimisticId));
+      setBody(trimmedBody);
       toast.error(res.error || "Failed to post comment");
     }
   };
@@ -55,7 +94,7 @@ export function TaskDiscussion({ taskId, comments }: TaskDiscussionProps) {
       </div>
 
       <div className="space-y-6">
-        {comments.map((comment) => (
+        {commentList.map((comment) => (
           <div key={comment.id} className="flex gap-4">
             <Avatar className="h-8 w-8">
               <AvatarImage src={comment.author.image || undefined} />
@@ -75,7 +114,7 @@ export function TaskDiscussion({ taskId, comments }: TaskDiscussionProps) {
           </div>
         ))}
 
-        {comments.length === 0 && (
+        {commentList.length === 0 && (
           <div className="text-center py-10 text-muted-foreground text-sm">
             No comments yet. Start a discussion.
           </div>

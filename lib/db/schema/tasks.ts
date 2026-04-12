@@ -128,7 +128,7 @@ export const issueActivity = pgTable(
       .notNull()
       .references(() => user.id),
     type: text("type").notNull(),
-    // 'created' | 'status_change' | 'priority_change' | 'assignment' | 'comment'
+    // 'created' | 'status_change' | 'priority_change' | 'assignment' | 'team_assignment' | 'comment' | 'system'
     fromValue: text("from_value"),
     toValue: text("to_value"),
     createdAt: timestamp("created_at").notNull().defaultNow(),

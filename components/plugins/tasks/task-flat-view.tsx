@@ -5,7 +5,7 @@ import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TaskRow } from "./task-row";
 import type { TaskWithDetails } from "@/lib/plugins/tasks-types";
-import { TASK_ROW_TEMPLATE_WITH_CHECKBOX } from "./task-row";
+import { TASK_ROW_TEMPLATE_WITH_CHECKBOX, TASK_ROW_TEMPLATE_NO_TEAM } from "./task-row";
 
 interface TaskFlatViewProps {
   tasks: TaskWithDetails[];
@@ -14,6 +14,7 @@ interface TaskFlatViewProps {
   selectedTaskIds: string[];
   onTaskSelectionChange: (taskId: string, selected: boolean) => void;
   onSelectVisibleTasks: (taskIds: string[], selected: boolean) => void;
+  teamsEnabled?: boolean;
 }
 
 type SortKey = "priority" | "title" | "assignee" | "team" | "due" | "status" | "createdAt";
@@ -38,6 +39,7 @@ export function TaskFlatView({
   selectedTaskIds,
   onTaskSelectionChange,
   onSelectVisibleTasks,
+  teamsEnabled = false,
 }: TaskFlatViewProps) {
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: SortOrder }>({
     key: "createdAt",
@@ -100,7 +102,7 @@ export function TaskFlatView({
   return (
     <div className="w-full">
       <div
-        className={`grid h-8 items-center gap-x-4 border-b px-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 ${TASK_ROW_TEMPLATE_WITH_CHECKBOX}`}
+        className={`grid h-8 items-center gap-x-4 border-b px-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 ${teamsEnabled ? TASK_ROW_TEMPLATE_WITH_CHECKBOX : TASK_ROW_TEMPLATE_NO_TEAM}`}
       >
         <div className="flex items-center justify-center opacity-50">
           <Checkbox
@@ -130,12 +132,15 @@ export function TaskFlatView({
         >
           Assignee {renderSortIcon(sortConfig, "assignee")}
         </div>
-        <div
-          className="flex-shrink-0 cursor-pointer hover:text-foreground flex items-center"
-          onClick={() => handleSort("team")}
-        >
-          Team {renderSortIcon(sortConfig, "team")}
-        </div>
+        {teamsEnabled && (
+          <div
+            className="flex-shrink-0 cursor-pointer hover:text-foreground flex items-center"
+            onClick={() => handleSort("team")}
+          >
+            Team {renderSortIcon(sortConfig, "team")}
+          </div>
+        )}
+        {!teamsEnabled && <div />}
         <div className="flex-shrink-0">Labels</div>
         <div
           className="flex-shrink-0 cursor-pointer hover:text-foreground flex items-center justify-end text-right"
@@ -151,17 +156,18 @@ export function TaskFlatView({
         </div>
       </div>
       <div className="flex flex-col">
-        {sortedTasks.map((task) => (
-          <TaskRow
-            key={task.id}
-            task={task}
-            orgSlug={orgSlug}
-            showCheckbox
-            checkboxChecked={selectedTaskIds.includes(task.id)}
-            checkboxDisabled={!canSelectTasks}
-            onCheckboxChange={(selected) => onTaskSelectionChange(task.id, selected)}
-          />
-        ))}
+          {sortedTasks.map((task) => (
+            <TaskRow
+              key={task.id}
+              task={task}
+              orgSlug={orgSlug}
+              showCheckbox
+              checkboxChecked={selectedTaskIds.includes(task.id)}
+              checkboxDisabled={!canSelectTasks}
+              onCheckboxChange={(selected) => onTaskSelectionChange(task.id, selected)}
+              teamsEnabled={teamsEnabled}
+            />
+          ))}
       </div>
       {sortedTasks.length === 0 && (
         <div className="py-10 text-center text-muted-foreground">
