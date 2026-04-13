@@ -32,7 +32,7 @@ const priorityIcons: Record<TaskPriority, { icon: LucideIcon; color: string }> =
   urgent: { icon: CircleAlert, color: "text-red-500" },
   high: { icon: ChevronUp, color: "text-orange-500" },
   medium: { icon: ChevronRight, color: "text-yellow-500" },
-  low: { icon: ChevronDown, color: "text-blue-500" },
+  low: { icon: ChevronDown, color: "text-orange-500" },
   no_priority: { icon: Minus, color: "text-muted-foreground" },
 };
 

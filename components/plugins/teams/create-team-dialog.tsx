@@ -110,7 +110,7 @@ export function CreateTeamDialog({
                     className={cn(
                       "h-8 w-8 rounded-full border-2 transition-all hover:scale-110",
                       selectedColor === color.value
-                        ? "border-black dark:border-white scale-110"
+                        ? "border-foreground scale-110"
                         : "border-transparent"
                     )}
                     style={{ backgroundColor: color.value }}

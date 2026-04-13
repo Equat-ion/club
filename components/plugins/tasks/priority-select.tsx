@@ -24,7 +24,7 @@ const PRIORITY_ICONS: Record<TaskPriority, React.ReactNode> = {
   urgent: <CircleAlert className="h-3.5 w-3.5 text-red-500" />,
   high: <ChevronUp className="h-3.5 w-3.5 text-orange-500" />,
   medium: <ChevronRight className="h-3.5 w-3.5 text-yellow-500" />,
-  low: <ChevronDown className="h-3.5 w-3.5 text-blue-500" />,
+  low: <ChevronDown className="h-3.5 w-3.5 text-orange-500" />,
   no_priority: <Minus className="h-3.5 w-3.5 text-muted-foreground" />,
 };
 

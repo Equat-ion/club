@@ -49,7 +49,7 @@ export default async function OrgSwitcherPage() {
 
   return (
     <div className="w-full flex h-screen overflow-hidden items-center justify-center p-4 md:p-8 bg-[url('/org_bg.svg')] bg-cover bg-center bg-fixed antialiased">
-      <div className="absolute inset-0 bg-white/70 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-background/75 pointer-events-none"></div>
       <div className="relative max-w-6xl w-full bg-background/90 border-2 border-border flex flex-col md:flex-row overflow-hidden shadow-2xl" style={{ height: 'calc(100vh - 4rem)' }}>
         <OrgSwitcherGrid orgs={orgs} user={session.user} />
       </div>

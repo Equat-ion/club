@@ -219,7 +219,7 @@ export default async function OrgHomePage({
         <Card className="shadow-none border-muted/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">In Progress</CardTitle>
-            <Clock className="h-4 w-4 text-blue-500/50" />
+            <Clock className="h-4 w-4 text-orange-500/50" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data.taskStats.inProgress}</div>
