@@ -16,10 +16,30 @@
       "sourceType": "local",
       "computedHash": "ec0206357b4096b1ff2df74f005f80db75839139d938f2fbf6751fa373986e9e"
     },
+    "shadcn": {
+      "source": "shadcn/ui",
+      "sourceType": "github",
+      "computedHash": "91c02eb706f046fb9d6a061efbb96496e4be751b5b14c283cf82baaa50f3a985"
+    },
     "shadcn-ui-expert": {
       "source": "/home/areeb/.agents/skills/shadcn-ui-expert",
       "sourceType": "local",
       "computedHash": "969ad2b851208dedb57a59eadd52fc86a8a8bf6bcb728c660c82dfa2045c8e90"
+    },
+    "skill-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "b122f4d1e91aa1d83027e050b5b37c3156203ee85458d7b1360bc48167c9e02a"
+    },
+    "stitch-design": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "computedHash": "6df709345652460b4d4fdf214476a20c75d76a2ae011a958a51de2c88e6d86d1"
+    },
+    "stitch-loop": {
+      "source": "google-labs-code/stitch-skills",
+      "sourceType": "github",
+      "computedHash": "e04912a9719b855afa733cc928d30dde0b8a5b91707ca27b98f0efcb8d9310a9"
     },
     "system-architect": {
       "source": "aj-geddes/claude-code-bmad-skills",
@@ -30,6 +50,11 @@
       "source": "/home/areeb/.agents/skills/tailwind-css",
       "sourceType": "local",
       "computedHash": "6f591a1fcaa35483d62270b2ec65c03bb0416a70ab3a7f40e14cce1fec080065"
+    },
+    "uncodixfy": {
+      "source": "cyxzdev/uncodixfy",
+      "sourceType": "github",
+      "computedHash": "deac2e88f3fc4a66aa95c77b509b5d22c189dfdb87caa24d3db85516f4600776"
     }
   }
 }

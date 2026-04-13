@@ -34,16 +34,59 @@ export type HookEventMap = {
             status?: string;
             priority?: string;
             assigneeId?: string | null;
+            teamId?: string | null;
             dueDate?: string | null;
         };
         actorId: string;
     };
 
-    /** Fired after a task is successfully deleted. */
+    /** Fired after a task status is changed. */
+    "task:status_changed": {
+        orgId: string;
+        taskId: string;
+        fromStatus: string;
+        toStatus: string;
+        memberId: string;
+    };
+
+    /** Fired after a task is assigned to a member. */
+    "task:assigned": {
+        orgId: string;
+        taskId: string;
+        toMemberId: string | null;
+        fromMemberId: string | null;
+        actorId: string;
+    };
+
+    /** Fired after a task is assigned to a team. */
+    "task:team_assigned": {
+        orgId: string;
+        taskId: string;
+        toTeamId: string | null;
+        fromTeamId: string | null;
+        actorId: string;
+    };
+
+    /** Fired after a label is added to a task. */
+    "task:label_added": {
+        orgId: string;
+        taskId: string;
+        labelId: string;
+        actorId: string;
+    };
+
+    /** Fired after a task (issue) is successfully deleted. */
+
     "task:deleted": {
         orgId: string;
         issueId: string;
         actorId: string;
+    };
+
+    /** Fired after a plugin is successfully installed for an org. */
+    "plugin:installed": {
+        orgId: string;
+        pluginId: string;
     };
 
     /** Fired after a plugin is successfully enabled for an org. */
@@ -58,6 +101,55 @@ export type HookEventMap = {
     "plugin:disabled": {
         orgId: string;
         pluginId: string;
+    };
+
+    /** Fired after a team is successfully created. */
+    "team:created": {
+        orgId: string;
+        teamId: string;
+        name: string;
+        creatorId: string;
+    };
+
+    /** Fired after a team is successfully updated. */
+    "team:updated": {
+        orgId: string;
+        teamId: string;
+        name: string;
+        actorId: string;
+    };
+
+    /** Fired after a team is successfully deleted. */
+    "team:deleted": {
+        orgId: string;
+        teamId: string;
+        actorId: string;
+    };
+
+    /** Fired after a member is successfully added to a team. */
+    "team:member_added": {
+        orgId: string;
+        teamId: string;
+        memberId: string;
+        role: string;
+        actorId: string;
+    };
+
+    /** Fired after a member is successfully removed from a team. */
+    "team:member_removed": {
+        orgId: string;
+        teamId: string;
+        memberId: string;
+        actorId: string;
+    };
+
+    /** Fired after a team member's role is successfully updated. */
+    "team:member_role_updated": {
+        orgId: string;
+        teamId: string;
+        memberId: string;
+        role: string;
+        actorId: string;
     };
 };
 

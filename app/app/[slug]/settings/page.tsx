@@ -5,7 +5,6 @@ import { db } from "@/lib/db";
 import { organization, member } from "@/lib/db/schema/auth";
 import { eq, and } from "drizzle-orm";
 import { SettingsContent } from "@/components/settings/settings-content";
-import { getOrgPlugins } from "@/actions/plugins";
 
 export default async function SettingsPage({
   params,
@@ -48,10 +47,6 @@ export default async function SettingsPage({
     redirect(`/app/${slug}`);
   }
 
-  // Fetch installed plugins (owner already verified above)
-  const pluginsResult = await getOrgPlugins(org.id);
-  const installedPlugins = pluginsResult.success ? pluginsResult.plugins : [];
-
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -65,7 +60,6 @@ export default async function SettingsPage({
         orgSlug={slug}
         orgName={org.name}
         orgLogo={org.logo ?? null}
-        installedPlugins={installedPlugins}
       />
     </div>
   );

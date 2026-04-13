@@ -1,5 +1,7 @@
 "use server";
 
+import { createId } from "@paralleldrive/cuid2";
+
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
@@ -195,3 +197,112 @@ async function revalidatePluginPaths(orgId: string) {
         revalidatePath(`/app/${org.slug}/settings`);
     }
 }
+
+/**
+ * Installs a plugin for an org (and its missing dependencies).
+ * Owner-only. Plugin must not already be installed.
+ */
+export async function installPlugin(
+    orgId: string,
+    pluginId: string
+): Promise<{ success: true; cascaded?: string[] } | { success: false; error: string }> {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) return { success: false, error: "Not authenticated" };
+
+    const membership = await db.query.member.findFirst({
+        where: and(eq(member.organizationId, orgId), eq(member.userId, session.user.id)),
+    });
+    if (!membership || membership.role !== "owner") {
+        return { success: false, error: "Only the Admin can manage plugins" };
+    }
+
+    // Verify plugin exists in registry
+    const registryPlugin = PLUGINS.find((p) => p.id === pluginId);
+    if (!registryPlugin) {
+        return { success: false, error: "Plugin not found in registry" };
+    }
+
+    // Check if already installed
+    const existing = await db.query.orgPlugins.findFirst({
+        where: and(eq(orgPlugins.orgId, orgId), eq(orgPlugins.pluginId, pluginId)),
+    });
+    if (existing) {
+        return { success: false, error: "Plugin is already installed for this organization" };
+    }
+
+    // Fetch the current enabled state for all org plugins (needed for dep checks)
+    const allOrgPlugins = await db.query.orgPlugins.findMany({
+        where: eq(orgPlugins.orgId, orgId),
+    });
+
+    const installedPluginIds = new Set(allOrgPlugins.map(p => p.pluginId));
+    const enabledPluginIds = allOrgPlugins.filter(p => p.enabled).map(p => p.pluginId);
+
+    // Dependencies to install and enable
+    const missingDeps = getMissingDependencies(pluginId, enabledPluginIds);
+
+    const toInstallRegistryPlugins = [
+        ...missingDeps.filter(p => !installedPluginIds.has(p.id)),
+        registryPlugin
+    ];
+
+    const toEnableInOrder = getEnableOrder([
+        ...missingDeps.map(p => p.id),
+        pluginId
+    ]);
+
+    // Gather records to insert
+    const insertValues = toInstallRegistryPlugins.map(p => ({
+        id: createId(),
+        orgId,
+        pluginId: p.id,
+        enabled: true, // User requested defaults to enabled: true upon installation
+        settings: {}
+    }));
+
+    // 1. Insert new plugins
+    if (insertValues.length > 0) {
+        await db.insert(orgPlugins).values(insertValues);
+    }
+
+    // 2. Enable plugins that were just installed or were already installed but disabled
+    const toForceEnableIds = toEnableInOrder.map(p => p.id);
+
+    await db
+        .update(orgPlugins)
+        .set({ enabled: true })
+        .where(
+            and(
+                eq(orgPlugins.orgId, orgId),
+                inArray(orgPlugins.pluginId, toForceEnableIds)
+            )
+        );
+
+    await revalidatePluginPaths(orgId);
+
+    // 3. Emit hook events
+    for (const p of toInstallRegistryPlugins) {
+        await hooksRegistry.emit("plugin:installed", { orgId, pluginId: p.id });
+    }
+
+    const cascadedNames = missingDeps.map(p => p.name);
+    if (cascadedNames.length > 0) {
+        await hooksRegistry.emit("plugin:enabled", {
+            orgId,
+            pluginId,
+            cascaded: missingDeps.map(p => p.id)
+        });
+    } else {
+        await hooksRegistry.emit("plugin:enabled", {
+            orgId,
+            pluginId,
+            cascaded: [],
+        });
+    }
+
+    return {
+        success: true,
+        ...(cascadedNames.length > 0 ? { cascaded: cascadedNames } : {})
+    };
+}
+

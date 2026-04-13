@@ -9,6 +9,11 @@
 
 import {
     CheckSquare,
+    Users,
+    MessageSquare,
+    Globe,
+    FileText,
+    NotebookPen,
     type LucideIcon,
     type LucideProps,
 } from "lucide-react";
@@ -17,6 +22,11 @@ import type { ComponentType } from "react";
 /** Map of every icon string used in the plugin registry to its React component. */
 const ICON_MAP: Record<string, LucideIcon> = {
     CheckSquare,
+    Users,
+    MessageSquare,
+    Globe,
+    FileText,
+    NotebookPen,
 };
 
 /**

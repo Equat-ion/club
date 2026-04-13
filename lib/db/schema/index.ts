@@ -12,4 +12,5 @@ export {
 // Custom application tables
 export { orgProfiles, orgPlugins } from "./orgs";
 export { memberProfiles } from "./members";
-export { issues, issueComments, issueActivity } from "./tasks";
+export { issues, labels, issueLabels, issueComments, issueActivity } from "./tasks";
+export { teams, teamMembers } from "./teams";
