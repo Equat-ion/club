@@ -8,6 +8,7 @@ import { ac, owner, admin, member } from "./permissions";
 import { orgProfiles, orgPlugins } from "@/lib/db/schema/orgs";
 import { getPluginsForPlan } from "@/lib/plugins/registry";
 import { createId } from "@paralleldrive/cuid2";
+import { dash } from "@better-auth/infra";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -83,6 +84,8 @@ export const auth = betterAuth({
         },
       },
     }),
+
+    dash(),
 
     // Must be last — enables cookie setting in server actions
     nextCookies(),
