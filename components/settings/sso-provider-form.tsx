@@ -102,55 +102,62 @@ export function SSOProviderForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border p-4">
-      <div className="grid gap-2">
-        <Label htmlFor="providerType">Provider type</Label>
-        <Select
-          value={providerType}
-          onValueChange={(value) => setProviderType(value as SSOProviderType)}
-        >
-          <SelectTrigger id="providerType" className="w-full">
-            <SelectValue placeholder="Choose type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="oidc">OIDC</SelectItem>
-            <SelectItem value="saml">SAML</SelectItem>
-          </SelectContent>
-        </Select>
+    <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border bg-card p-4">
+      <div className="grid gap-2 rounded-md border bg-background p-3 sm:grid-cols-2 sm:items-end">
+        <div className="grid gap-2">
+          <Label htmlFor="providerType">Provider type</Label>
+          <Select
+            value={providerType}
+            onValueChange={(value) => setProviderType(value as SSOProviderType)}
+          >
+            <SelectTrigger id="providerType" className="w-full">
+              <SelectValue placeholder="Choose type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="oidc">OIDC</SelectItem>
+              <SelectItem value="saml">SAML</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="text-xs text-muted-foreground sm:text-right">
+          Start with provider identity details, then fill type-specific settings.
+        </p>
       </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="providerId">Provider ID</Label>
-        <Input
-          id="providerId"
-          value={providerId}
-          onChange={(e) => setProviderId(e.target.value)}
-          placeholder="acme-oidc"
-          required
-        />
-      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-2 sm:col-span-1">
+          <Label htmlFor="providerId">Provider ID</Label>
+          <Input
+            id="providerId"
+            value={providerId}
+            onChange={(e) => setProviderId(e.target.value)}
+            placeholder={providerType === "oidc" ? "acme-oidc" : "acme-saml"}
+            required
+          />
+        </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="issuer">Issuer URL</Label>
-        <Input
-          id="issuer"
-          value={issuer}
-          onChange={(e) => setIssuer(e.target.value)}
-          placeholder="https://idp.example.com"
-          type="url"
-          required
-        />
-      </div>
+        <div className="grid gap-2 sm:col-span-1">
+          <Label htmlFor="domain">Email domain(s)</Label>
+          <Input
+            id="domain"
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            placeholder="example.com or example.com,sub.example.com"
+            required
+          />
+        </div>
 
-      <div className="grid gap-2">
-        <Label htmlFor="domain">Email domain(s)</Label>
-        <Input
-          id="domain"
-          value={domain}
-          onChange={(e) => setDomain(e.target.value)}
-          placeholder="example.com or example.com,sub.example.com"
-          required
-        />
+        <div className="grid gap-2 sm:col-span-2">
+          <Label htmlFor="issuer">Issuer URL</Label>
+          <Input
+            id="issuer"
+            value={issuer}
+            onChange={(e) => setIssuer(e.target.value)}
+            placeholder="https://idp.example.com"
+            type="url"
+            required
+          />
+        </div>
       </div>
 
       {providerType === "oidc" ? (

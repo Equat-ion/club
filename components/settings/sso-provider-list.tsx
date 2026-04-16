@@ -2,19 +2,27 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { deleteOrgSSOProvider } from "@/actions/sso";
 import type { SSOProviderSummary } from "@/lib/auth/sso";
+import { formatDisplayPath, splitDomainList } from "./sso-provider-list-utils";
+
+function buildMetadataPath(providerId: string) {
+  return `/api/auth/sso/saml2/sp/metadata?providerId=${encodeURIComponent(providerId)}`;
+}
+
+function buildAcsPath(providerId: string) {
+  return `/api/auth/sso/saml2/sp/acs/${encodeURIComponent(providerId)}`;
+}
+
+function buildSpEntityId(providerId: string) {
+  return `/api/auth/sso/saml2/sp/metadata?providerId=${encodeURIComponent(providerId)}`;
+}
+
+function formatAcsUrl(provider: SSOProviderSummary) {
+  return provider.samlConfig?.callbackUrl || buildAcsPath(provider.providerId);
+}
 
 export function SSOProviderList({
   orgId,
@@ -43,56 +51,90 @@ export function SSOProviderList({
 
   if (providers.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+      <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
         No SSO providers configured yet.
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Provider</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Domain</TableHead>
-            <TableHead>Issuer</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {providers.map((provider) => (
-            <TableRow key={provider.providerId}>
-              <TableCell className="font-medium">{provider.providerId}</TableCell>
-              <TableCell className="uppercase text-xs tracking-wider text-muted-foreground">
-                {provider.type}
-              </TableCell>
-              <TableCell>{provider.domain}</TableCell>
-              <TableCell className="max-w-[280px] truncate">{provider.issuer}</TableCell>
-              <TableCell>
-                {provider.domainVerified ? (
-                  <Badge variant="default">Verified</Badge>
+    <div className="space-y-3">
+      {providers.map((provider) => (
+        <article key={provider.providerId} className="rounded-lg border bg-card p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium">{provider.providerId}</p>
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {provider.type}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1 text-xs text-muted-foreground">
+                {splitDomainList(provider.domain).map((domain) => (
+                  <span key={`${provider.providerId}-${domain}`} className="rounded-sm bg-muted px-1.5 py-0.5">
+                    {domain}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <Badge variant={provider.domainVerified ? "default" : "secondary"}>
+              {provider.domainVerified ? "Verified" : "Unverified"}
+            </Badge>
+          </div>
+
+          <dl className="mt-4 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+            <div>
+              <dt className="font-medium text-foreground">SP Entity ID</dt>
+              <dd className="break-all font-mono">
+                {provider.type === "saml"
+                  ? formatDisplayPath(buildSpEntityId(provider.providerId))
+                  : "-"}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-foreground">ACS URL</dt>
+              <dd className="break-all font-mono">
+                {provider.type === "saml"
+                  ? formatDisplayPath(formatAcsUrl(provider))
+                  : "-"}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-foreground">Issuer</dt>
+              <dd className="break-all">{provider.issuer}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-foreground">Metadata</dt>
+              <dd>
+                {provider.type === "saml" ? (
+                  <a
+                    href={buildMetadataPath(provider.providerId)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-2"
+                  >
+                    Open metadata
+                  </a>
                 ) : (
-                  <Badge variant="secondary">Unverified</Badge>
+                  "-"
                 )}
-              </TableCell>
-              <TableCell className="text-right">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(provider.providerId)}
-                  disabled={deletingProviderId === provider.providerId}
-                  aria-label={`Delete ${provider.providerId}`}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              </dd>
+            </div>
+          </dl>
+
+          <div className="mt-4 flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDelete(provider.providerId)}
+              disabled={deletingProviderId === provider.providerId}
+              aria-label={`Delete ${provider.providerId}`}
+            >
+              {deletingProviderId === provider.providerId ? "Removing..." : "Remove"}
+            </Button>
+          </div>
+        </article>
+      ))}
     </div>
   );
 }

@@ -28,15 +28,20 @@ export function SSOSettingsPanel({
   }
 
   return (
-    <section className="space-y-4 pt-4">
-      <div className="flex items-center justify-between">
+    <section className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-medium">Enterprise SSO</h2>
           <p className="text-sm text-muted-foreground">
             Register OIDC or SAML identity providers for org members.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={refreshProviders} disabled={refreshing}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={refreshProviders}
+          disabled={refreshing}
+        >
           {refreshing ? "Refreshing..." : "Refresh"}
         </Button>
       </div>
