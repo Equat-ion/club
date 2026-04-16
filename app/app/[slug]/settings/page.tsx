@@ -61,20 +61,22 @@ export default async function SettingsPage({
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your organization settings.
-        </p>
+    <div className="px-4 py-6 sm:px-6 lg:px-8">
+      <div className="max-w-5xl">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manage your organization settings.
+          </p>
+        </div>
+        <SettingsContent
+          orgId={org.id}
+          orgSlug={slug}
+          orgName={org.name}
+          orgLogo={org.logo ?? null}
+          initialSSOProviders={initialSSOProviders}
+        />
       </div>
-      <SettingsContent
-        orgId={org.id}
-        orgSlug={slug}
-        orgName={org.name}
-        orgLogo={org.logo ?? null}
-        initialSSOProviders={initialSSOProviders}
-      />
     </div>
   );
 }
