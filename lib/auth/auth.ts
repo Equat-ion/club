@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { organization } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
+import { sso } from "@better-auth/sso";
 import { Resend } from "resend";
 import { db } from "@/lib/db";
 import { ac, owner, admin, member } from "./permissions";
@@ -82,6 +83,22 @@ export const auth = betterAuth({
           }
         },
       },
+    }),
+
+    sso({
+      modelName: "sso_provider",
+      fields: {
+        oidcConfig: "oidc_config",
+        samlConfig: "saml_config",
+        userId: "user_id",
+        providerId: "provider_id",
+        organizationId: "organization_id",
+      },
+      organizationProvisioning: {
+        disabled: false,
+        defaultRole: "member",
+      },
+      provisionUserOnEveryLogin: true,
     }),
 
     // Must be last — enables cookie setting in server actions

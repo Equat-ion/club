@@ -7,6 +7,7 @@ export {
   organization,
   member,
   invitation,
+  ssoProvider,
 } from "./auth";
 
 // Custom application tables

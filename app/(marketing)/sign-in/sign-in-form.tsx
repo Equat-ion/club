@@ -7,6 +7,8 @@ import { authClient } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { SSOSignInButton } from "@/components/auth/sso-sign-in-button";
 import { toast } from "sonner";
 import { Layers, CheckCircle2 } from "lucide-react";
 
@@ -56,7 +58,7 @@ export function SignInForm() {
               Sign in<br />to your<br />workspace
             </h1>
             <p className="text-muted-foreground text-base xl:text-lg leading-relaxed max-w-xs">
-              Access your organisation's tasks, teams, and tools — all in one
+              Access your organisation&apos;s tasks, teams, and tools — all in one
               place.
             </p>
           </div>
@@ -148,6 +150,17 @@ export function SignInForm() {
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Separator className="flex-1" />
+              <span className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground">
+                or
+              </span>
+              <Separator className="flex-1" />
+            </div>
+            <SSOSignInButton callbackURL={redirect} />
+          </div>
 
           <p className="text-sm text-muted-foreground text-center">
             Don&apos;t have an account?{" "}

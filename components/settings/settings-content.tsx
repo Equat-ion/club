@@ -16,6 +16,8 @@ import {
 import { updateOrgName, updateOrgLogo } from "@/actions/settings";
 import { DeleteOrgDialog } from "./delete-org-dialog";
 import { toast } from "sonner";
+import type { SSOProviderSummary } from "@/lib/auth/sso";
+import { SSOSettingsPanel } from "./sso-settings-panel";
 
 
 export function SettingsContent({
@@ -23,11 +25,13 @@ export function SettingsContent({
   orgSlug,
   orgName,
   orgLogo,
+  initialSSOProviders,
 }: {
   orgId: string;
   orgSlug: string;
   orgName: string;
   orgLogo: string | null;
+  initialSSOProviders: SSOProviderSummary[];
 }) {
   const router = useRouter();
   const [name, setName] = useState(orgName);
@@ -166,6 +170,8 @@ export function SettingsContent({
           </div>
         </CardContent>
       </Card>
+
+      <SSOSettingsPanel orgId={orgId} initialProviders={initialSSOProviders} />
     </div>
   );
 }
