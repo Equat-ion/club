@@ -32,6 +32,7 @@ import {
   type HookEvent,
   type HookPayload,
 } from "@/lib/hooks";
+import { MAX_TASK_LABELS } from "@/lib/plugins/tasks-constants";
 
 // Register all plugin hook handlers once at module load.
 initHooks();
@@ -100,6 +101,11 @@ function emitHook<E extends HookEvent>(event: E, payload: HookPayload<E>): void 
   void hooksRegistry.emit(event, payload).catch((error) => {
     console.error(`[hooks] failed to emit ${event}:`, error);
   });
+}
+
+function normalizeLabelIds(labelIds?: string[]): string[] {
+  if (!labelIds || labelIds.length === 0) return [];
+  return [...new Set(labelIds)];
 }
 
 // ============================================================
@@ -499,6 +505,10 @@ export async function createTask(
   try {
     const session = await getAuthenticatedUser();
     await verifyMembership(orgId, session.user.id);
+    const normalizedLabelIds = normalizeLabelIds(data.labelIds);
+    if (normalizedLabelIds.length > MAX_TASK_LABELS) {
+      throw new Error(`A task can have at most ${MAX_TASK_LABELS} labels`);
+    }
 
     const { identifier, orgSlug } = await generateTaskIdentifier(orgId);
     const taskId = createId();
@@ -518,9 +528,9 @@ export async function createTask(
         dueDate: data.dueDate ?? null,
       });
 
-      if (data.labelIds && data.labelIds.length > 0) {
+      if (normalizedLabelIds.length > 0) {
         await tx.insert(issueLabels).values(
-          data.labelIds.map((labelId) => ({
+          normalizedLabelIds.map((labelId) => ({
             issueId: taskId,
             labelId,
           }))
@@ -572,6 +582,11 @@ export async function updateTask(
 ) {
   try {
     const session = await getAuthenticatedUser();
+    const normalizedLabelIds =
+      data.labelIds !== undefined ? normalizeLabelIds(data.labelIds) : undefined;
+    if (normalizedLabelIds !== undefined && normalizedLabelIds.length > MAX_TASK_LABELS) {
+      throw new Error(`A task can have at most ${MAX_TASK_LABELS} labels`);
+    }
 
     const current = await db.query.issues.findFirst({
       where: eq(tasks.id, taskId),
@@ -607,12 +622,12 @@ export async function updateTask(
         await tx.update(tasks).set(updates).where(eq(tasks.id, taskId));
       }
 
-      if (data.labelIds !== undefined) {
+      if (normalizedLabelIds !== undefined) {
         // Replace all labels
         await tx.delete(issueLabels).where(eq(issueLabels.issueId, taskId));
-        if (data.labelIds.length > 0) {
+        if (normalizedLabelIds.length > 0) {
           await tx.insert(issueLabels).values(
-            data.labelIds.map((labelId) => ({
+            normalizedLabelIds.map((labelId) => ({
               issueId: taskId,
               labelId,
             }))

@@ -3,6 +3,7 @@
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { StatusSelect } from "./status-select";
@@ -11,6 +12,7 @@ import { AssigneeSelect } from "./assignee-select";
 import { TeamPicker } from "./team-picker";
 import { LabelPicker } from "./label-picker";
 import type { TaskWithDetails, OrgMember, Label, OrgTeam, TaskStatus, TaskPriority } from "@/lib/plugins/tasks-types";
+import { MAX_TASK_LABELS } from "@/lib/plugins/tasks-constants";
 
 interface TaskMetadataRowProps {
   task: TaskWithDetails;
@@ -88,11 +90,34 @@ export function TaskMetadataRow({
         </PopoverContent>
       </Popover>
 
+      {task.labels.map((label) => (
+        <Badge
+          key={label.id}
+          variant="outline"
+          className="h-7 max-w-[160px] gap-1.5 border-muted/50 px-2 text-xs font-normal text-muted-foreground"
+        >
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: label.color }}
+          />
+          <span className="truncate">{label.name}</span>
+        </Badge>
+      ))}
+
       <LabelPicker
         orgId={orgId}
         availableLabels={labels}
         selectedLabelIds={task.labels.map(l => l.id)}
-        onSelect={(labelId) => onUpdate({ labelIds: [...task.labels.map(l => l.id), labelId] })}
+        maxSelectedLabels={MAX_TASK_LABELS}
+        onSelect={(labelId) =>
+          onUpdate({
+            labelIds: task.labels
+              .map((l) => l.id)
+              .includes(labelId)
+              ? task.labels.map((l) => l.id)
+              : [...task.labels.map((l) => l.id), labelId].slice(0, MAX_TASK_LABELS),
+          })
+        }
         onRemove={(labelId) => onUpdate({ labelIds: task.labels.map(l => l.id).filter(id => id !== labelId) })}
       />
     </div>
