@@ -236,7 +236,7 @@ export function TaskDetail({
                     <Badge
                       key={label.id}
                       variant="outline"
-                      className="h-5 max-w-[140px] gap-1 border-muted/50 px-1.5 text-[10px] font-normal text-muted-foreground"
+                      className="h-5 max-w-[140px] gap-1 border-muted/50 px-1.5 text-xs font-normal text-muted-foreground"
                     >
                       <span
                         className="h-1.5 w-1.5 rounded-full"
