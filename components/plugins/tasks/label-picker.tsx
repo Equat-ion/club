@@ -184,7 +184,7 @@ export function LabelPicker({
                   onClick={() => setIsCreating(true)}
                 >
                   <Plus className="h-4 w-4" />
-                  Create "{search}"
+                  Create &quot;{search}&quot;
                 </div>
               )}
             </div>
