@@ -1,5 +1,6 @@
 import { createAuthClient } from "better-auth/react";
 import { organizationClient } from "better-auth/client/plugins";
+import { ssoClient } from "@better-auth/sso/client";
 import { ac, owner, admin, member } from "./permissions";
 import { sentinelClient } from "@better-auth/infra/client";
 
@@ -10,7 +11,8 @@ export const authClient = createAuthClient({
       ac,
       roles: { owner, admin, member },
     }),
-    sentinelClient()
+    ssoClient(),
+    sentinelClient(),
   ],
 });
 

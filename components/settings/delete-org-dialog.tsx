@@ -63,8 +63,8 @@ export function DeleteOrgDialog({
             Delete Organization
           </DialogTitle>
           <DialogDescription>
-            This action is permanent and cannot be undone. All organization data,
-            including members, tasks, and settings, will be permanently deleted.
+            This action is permanent. Deleting <span className="font-medium">{orgSlug}</span> removes all members,
+            tasks, settings, and plugin data.
           </DialogDescription>
         </DialogHeader>
 

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { organization, member } from "@/lib/db/schema/auth";
 import { eq, and } from "drizzle-orm";
 import { SettingsContent } from "@/components/settings/settings-content";
+import type { SSOProviderSummary } from "@/lib/auth/sso";
 
 export default async function SettingsPage({
   params,
@@ -47,11 +48,23 @@ export default async function SettingsPage({
     redirect(`/app/${slug}`);
   }
 
+  let initialSSOProviders: SSOProviderSummary[] = [];
+  try {
+    const providersResponse = await auth.api.listSSOProviders({
+      headers: await headers(),
+    });
+    initialSSOProviders = providersResponse.providers.filter(
+      (provider) => provider.organizationId === org.id,
+    );
+  } catch {
+    initialSSOProviders = [];
+  }
+
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
+    <div className="px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mb-6 w-full">
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           Manage your organization settings.
         </p>
       </div>
@@ -60,6 +73,7 @@ export default async function SettingsPage({
         orgSlug={slug}
         orgName={org.name}
         orgLogo={org.logo ?? null}
+        initialSSOProviders={initialSSOProviders}
       />
     </div>
   );

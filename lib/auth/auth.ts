@@ -2,8 +2,10 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { organization } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
+import { sso } from "@better-auth/sso";
 import { Resend } from "resend";
 import { db } from "@/lib/db";
+import * as dbSchema from "@/lib/db/schema";
 import { ac, owner, admin, member } from "./permissions";
 import { orgProfiles, orgPlugins } from "@/lib/db/schema/orgs";
 import { getPluginsForPlan } from "@/lib/plugins/registry";
@@ -13,7 +15,13 @@ import { dash } from "@better-auth/infra";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, { provider: "pg" }),
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema: {
+      ...dbSchema,
+      sso_provider: dbSchema.ssoProvider,
+    },
+  }),
 
   emailAndPassword: { enabled: true },
 
@@ -85,6 +93,14 @@ export const auth = betterAuth({
       },
     }),
 
+    sso({
+      modelName: "sso_provider",
+      organizationProvisioning: {
+        disabled: false,
+        defaultRole: "member",
+      },
+      provisionUserOnEveryLogin: true,
+    }),
     dash(),
 
     // Must be last — enables cookie setting in server actions
