@@ -117,8 +117,8 @@ export function SettingsContent({
   }
 
   return (
-    <div className="grid grid-cols-1 items-start lg:grid-cols-[minmax(0,1fr)_minmax(0,48rem)_14rem_minmax(0,1fr)] lg:gap-x-6">
-      <div className="space-y-10 lg:col-start-2">
+    <div className="relative lg:pr-64">
+      <div className="max-w-3xl space-y-10">
         <section id="org-name" className="scroll-mt-24 space-y-4">
           <div>
             <h3 className="text-lg font-medium">Organization Name</h3>
@@ -210,7 +210,7 @@ export function SettingsContent({
         </section>
       </div>
 
-      <div className="hidden lg:col-start-3 lg:block">
+      <div className="fixed right-8 top-24 hidden w-56 lg:block">
         <SettingsSectionNav
           sections={SETTINGS_SECTIONS}
           activeSectionId={activeSectionId}

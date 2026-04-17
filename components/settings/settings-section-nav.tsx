@@ -25,7 +25,7 @@ export function SettingsSectionNav({
               data-active={section.id === activeSectionId}
               onClick={() => onNavigate(section.id)}
               className={cn(
-                "w-full rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground",
+                "w-full rounded-md px-3 py-2 text-right text-sm text-muted-foreground transition-colors hover:text-foreground",
                 section.id === activeSectionId && "bg-accent text-foreground",
               )}
             >
