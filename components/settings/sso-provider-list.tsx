@@ -33,7 +33,9 @@ export function SSOProviderList({
   providers: SSOProviderSummary[];
   onUpdated: () => Promise<void> | void;
 }) {
-  const [deletingProviderId, setDeletingProviderId] = useState<string | null>(null);
+  const [deletingProviderId, setDeletingProviderId] = useState<string | null>(
+    null,
+  );
 
   async function handleDelete(providerId: string) {
     setDeletingProviderId(providerId);
@@ -71,7 +73,10 @@ export function SSOProviderList({
               </div>
               <div className="flex flex-wrap gap-1 text-xs text-muted-foreground">
                 {splitDomainList(provider.domain).map((domain) => (
-                  <span key={`${provider.providerId}-${domain}`} className="rounded-sm bg-muted px-1.5 py-0.5">
+                  <span
+                    key={`${provider.providerId}-${domain}`}
+                    className="rounded-sm bg-muted px-1.5 py-0.5"
+                  >
                     {domain}
                   </span>
                 ))}

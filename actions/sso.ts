@@ -56,6 +56,32 @@ function parseDomains(rawDomain: string) {
     .join(",");
 }
 
+function escapeXml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function normalizeCertificate(cert: string) {
+  return cert
+    .replace("-----BEGIN CERTIFICATE-----", "")
+    .replace("-----END CERTIFICATE-----", "")
+    .replace(/\s+/g, "")
+    .trim();
+}
+
+function buildIdPMetadataXml(input: {
+  issuer: string;
+  entryPoint: string;
+  certificate: string;
+}) {
+  const cert = normalizeCertificate(input.certificate);
+  return `<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" entityID="${escapeXml(input.issuer)}"><IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><KeyDescriptor use="signing"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:X509Data><ds:X509Certificate>${escapeXml(cert)}</ds:X509Certificate></ds:X509Data></ds:KeyInfo></KeyDescriptor><SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="${escapeXml(input.entryPoint)}"/><SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="${escapeXml(input.entryPoint)}"/></IDPSSODescriptor></EntityDescriptor>`;
+}
+
 export async function getOrgSSOProviders(
   orgId: string,
 ): Promise<ActionResult<{ providers: SSOProviderSummary[] }>> {
@@ -155,6 +181,14 @@ export async function registerSAMLSSOProvider(input: {
   const cert = input.certificate.trim();
   const callbackUrl = input.callbackUrl?.trim() || undefined;
   const audience = input.audience?.trim() || undefined;
+  const resolvedCallbackUrl =
+    callbackUrl ??
+    `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/sso/saml2/sp/acs/${providerId}`;
+  const idpMetadataXml = buildIdPMetadataXml({
+    issuer,
+    entryPoint,
+    certificate: cert,
+  });
 
   if (!providerId || !issuer || !domain || !entryPoint || !cert) {
     return { success: false, error: "All required SAML fields must be filled" };
@@ -171,10 +205,19 @@ export async function registerSAMLSSOProvider(input: {
         samlConfig: {
           entryPoint,
           cert,
-          callbackUrl:
-            callbackUrl ??
-            `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/sso/saml2/sp/acs/${providerId}`,
-          spMetadata: {},
+          callbackUrl: resolvedCallbackUrl,
+          idpMetadata: {
+            metadata: idpMetadataXml,
+            singleSignOnService: [
+              {
+                Binding: "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+                Location: entryPoint,
+              },
+            ],
+          },
+          spMetadata: {
+            entityID: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/sso/saml2/sp/metadata?providerId=${providerId}`,
+          },
           ...(audience ? { audience } : {}),
         },
       },

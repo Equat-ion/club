@@ -33,7 +33,7 @@ export function SSOSettingsPanel({
         <div>
           <h2 className="text-lg font-medium">Enterprise SSO</h2>
           <p className="text-sm text-muted-foreground">
-            Register OIDC or SAML identity providers for org members.
+            Register SAML identity providers for org members.
           </p>
         </div>
         <Button

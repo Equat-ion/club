@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { sso } from "@better-auth/sso";
 import { Resend } from "resend";
 import { db } from "@/lib/db";
+import * as dbSchema from "@/lib/db/schema";
 import { ac, owner, admin, member } from "./permissions";
 import { orgProfiles, orgPlugins } from "@/lib/db/schema/orgs";
 import { getPluginsForPlan } from "@/lib/plugins/registry";
@@ -13,7 +14,13 @@ import { createId } from "@paralleldrive/cuid2";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, { provider: "pg" }),
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema: {
+      ...dbSchema,
+      sso_provider: dbSchema.ssoProvider,
+    },
+  }),
 
   emailAndPassword: { enabled: true },
 
@@ -87,13 +94,6 @@ export const auth = betterAuth({
 
     sso({
       modelName: "sso_provider",
-      fields: {
-        oidcConfig: "oidc_config",
-        samlConfig: "saml_config",
-        userId: "user_id",
-        providerId: "provider_id",
-        organizationId: "organization_id",
-      },
       organizationProvisioning: {
         disabled: false,
         defaultRole: "member",

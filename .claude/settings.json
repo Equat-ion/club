@@ -3,21 +3,34 @@
     "PostToolUse": [
       {
         "matcher": "Edit|Write|Bash",
-        "command": "code-review-graph update --quiet",
+        "hooks": [{
+          "type": "command",
+          "command": "code-review-graph update --quiet"
+        }],
         "timeout": 5000
       }
     ],
     "SessionStart": [
       {
-        "command": "code-review-graph status --json",
+        "hooks": [{
+          "type": "command",
+          "command": "code-review-graph status --json"
+        }],
         "timeout": 3000
       }
     ],
-    "PreCommit": [
+    "PreToolUse": [
       {
-        "command": "code-review-graph detect-changes --brief",
+        "hooks": [{
+          "type": "command",
+          "command": "code-review-graph detect-changes --brief"
+        }],
         "timeout": 10000
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"/home/equation/.claude/plugins/cache/caveman/caveman/c2ed24b3e5d4/hooks/caveman-statusline.sh\""
   }
 }

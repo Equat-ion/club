@@ -6,18 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  registerOIDCSSOProvider,
-  registerSAMLSSOProvider,
-} from "@/actions/sso";
-import type { SSOProviderType } from "@/lib/auth/sso";
+import { registerSAMLSSOProvider } from "@/actions/sso";
 
 export function SSOProviderForm({
   orgId,
@@ -26,13 +15,9 @@ export function SSOProviderForm({
   orgId: string;
   onRegistered: () => Promise<void> | void;
 }) {
-  const [providerType, setProviderType] = useState<SSOProviderType>("oidc");
   const [providerId, setProviderId] = useState("");
   const [issuer, setIssuer] = useState("");
   const [domain, setDomain] = useState("");
-
-  const [clientId, setClientId] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
 
   const [entryPoint, setEntryPoint] = useState("");
   const [certificate, setCertificate] = useState("");
@@ -43,10 +28,8 @@ export function SSOProviderForm({
 
   const baseMissing =
     !providerId.trim() || !issuer.trim() || !domain.trim();
-  const oidcMissing = !clientId.trim() || !clientSecret.trim();
   const samlMissing = !entryPoint.trim() || !certificate.trim();
-  const disabled =
-    submitting || baseMissing || (providerType === "oidc" ? oidcMissing : samlMissing);
+  const disabled = submitting || baseMissing || samlMissing;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,26 +37,16 @@ export function SSOProviderForm({
 
     setSubmitting(true);
 
-    const result =
-      providerType === "oidc"
-        ? await registerOIDCSSOProvider({
-            orgId,
-            providerId,
-            issuer,
-            domain,
-            clientId,
-            clientSecret,
-          })
-        : await registerSAMLSSOProvider({
-            orgId,
-            providerId,
-            issuer,
-            domain,
-            entryPoint,
-            certificate,
-            audience,
-            callbackUrl,
-          });
+    const result = await registerSAMLSSOProvider({
+      orgId,
+      providerId,
+      issuer,
+      domain,
+      entryPoint,
+      certificate,
+      audience,
+      callbackUrl,
+    });
 
     setSubmitting(false);
 
@@ -82,17 +55,11 @@ export function SSOProviderForm({
       return;
     }
 
-    toast.success(
-      providerType === "oidc"
-        ? "OIDC provider registered"
-        : "SAML provider registered",
-    );
+    toast.success("SAML provider registered");
 
     setProviderId("");
     setIssuer("");
     setDomain("");
-    setClientId("");
-    setClientSecret("");
     setEntryPoint("");
     setCertificate("");
     setAudience("");
@@ -103,40 +70,19 @@ export function SSOProviderForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border bg-card p-4">
-      <div className="grid gap-2 rounded-md border bg-background p-3 sm:grid-cols-2 sm:items-end">
-        <div className="grid gap-2">
-          <Label htmlFor="providerType">Provider type</Label>
-          <Select
-            value={providerType}
-            onValueChange={(value) => setProviderType(value as SSOProviderType)}
-          >
-            <SelectTrigger id="providerType" className="w-full">
-              <SelectValue placeholder="Choose type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="oidc">OIDC</SelectItem>
-              <SelectItem value="saml">SAML</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <p className="text-xs text-muted-foreground sm:text-right">
-          Start with provider identity details, then fill type-specific settings.
-        </p>
-      </div>
-
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="grid gap-2 sm:col-span-1">
+        <div className="grid gap-2">
           <Label htmlFor="providerId">Provider ID</Label>
           <Input
             id="providerId"
             value={providerId}
             onChange={(e) => setProviderId(e.target.value)}
-            placeholder={providerType === "oidc" ? "acme-oidc" : "acme-saml"}
+            placeholder="acme-saml"
             required
           />
         </div>
 
-        <div className="grid gap-2 sm:col-span-1">
+        <div className="grid gap-2">
           <Label htmlFor="domain">Email domain(s)</Label>
           <Input
             id="domain"
@@ -160,77 +106,50 @@ export function SSOProviderForm({
         </div>
       </div>
 
-      {providerType === "oidc" ? (
-        <>
-          <div className="grid gap-2">
-            <Label htmlFor="clientId">Client ID</Label>
-            <Input
-              id="clientId"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              required
-            />
-          </div>
+      <div className="grid gap-2">
+        <Label htmlFor="entryPoint">SAML entry point</Label>
+        <Input
+          id="entryPoint"
+          value={entryPoint}
+          onChange={(e) => setEntryPoint(e.target.value)}
+          placeholder="https://idp.example.com/sso/saml"
+          type="url"
+          required
+        />
+      </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="clientSecret">Client secret</Label>
-            <Input
-              id="clientSecret"
-              value={clientSecret}
-              onChange={(e) => setClientSecret(e.target.value)}
-              type="password"
-              required
-            />
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="grid gap-2">
-            <Label htmlFor="entryPoint">SAML entry point</Label>
-            <Input
-              id="entryPoint"
-              value={entryPoint}
-              onChange={(e) => setEntryPoint(e.target.value)}
-              placeholder="https://idp.example.com/sso/saml"
-              type="url"
-              required
-            />
-          </div>
+      <div className="grid gap-2">
+        <Label htmlFor="audience">Audience (optional)</Label>
+        <Input
+          id="audience"
+          value={audience}
+          onChange={(e) => setAudience(e.target.value)}
+          placeholder="https://app.example.com"
+        />
+      </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="audience">Audience (optional)</Label>
-            <Input
-              id="audience"
-              value={audience}
-              onChange={(e) => setAudience(e.target.value)}
-              placeholder="https://app.example.com"
-            />
-          </div>
+      <div className="grid gap-2">
+        <Label htmlFor="callbackUrl">Callback URL (optional)</Label>
+        <Input
+          id="callbackUrl"
+          value={callbackUrl}
+          onChange={(e) => setCallbackUrl(e.target.value)}
+          placeholder="https://app.example.com/api/auth/sso/saml2/sp/acs/acme-saml"
+          type="url"
+        />
+      </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="callbackUrl">Callback URL (optional)</Label>
-            <Input
-              id="callbackUrl"
-              value={callbackUrl}
-              onChange={(e) => setCallbackUrl(e.target.value)}
-              placeholder="https://app.example.com/api/auth/sso/saml2/sp/acs/acme-saml"
-              type="url"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="certificate">X.509 certificate</Label>
-            <Textarea
-              id="certificate"
-              value={certificate}
-              onChange={(e) => setCertificate(e.target.value)}
-              placeholder="-----BEGIN CERTIFICATE-----"
-              className="min-h-32 font-mono text-xs"
-              required
-            />
-          </div>
-        </>
-      )}
+      <div className="grid gap-2">
+        <Label htmlFor="certificate">X.509 certificate</Label>
+        <Textarea
+          id="certificate"
+          value={certificate}
+          onChange={(e) => setCertificate(e.target.value)}
+          placeholder="-----BEGIN CERTIFICATE-----"
+          className="min-h-32 font-mono text-xs"
+          required
+        />
+      </div>
 
       <div className="flex justify-end">
         <Button type="submit" disabled={disabled}>

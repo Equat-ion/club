@@ -15,9 +15,9 @@ export function SettingsSectionNav({
   return (
     <nav
       aria-label="Settings sections"
-      className="hidden lg:sticky lg:top-6 lg:block"
+      className="sticky top-20"
     >
-      <ol className="space-y-1.5">
+      <ol className="w-56 space-y-1.5">
         {sections.map((section) => (
           <li key={section.id}>
             <button
