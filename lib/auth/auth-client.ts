@@ -2,6 +2,7 @@ import { createAuthClient } from "better-auth/react";
 import { organizationClient } from "better-auth/client/plugins";
 import { ssoClient } from "@better-auth/sso/client";
 import { ac, owner, admin, member } from "./permissions";
+import { sentinelClient } from "@better-auth/infra/client";
 
 export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_APP_URL!,
@@ -11,6 +12,7 @@ export const authClient = createAuthClient({
       roles: { owner, admin, member },
     }),
     ssoClient(),
+    sentinelClient(),
   ],
 });
 
