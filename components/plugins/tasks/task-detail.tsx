@@ -215,7 +215,7 @@ export function TaskDetail({
         </div>
 
         <div className="flex flex-col gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2 text-xs opacity-60">
+          <div className="flex flex-wrap items-center gap-2 text-xs opacity-60">
             <span>Created by</span>
             <div className="flex items-center gap-1.5">
               <Avatar className="h-4 w-4">
@@ -228,6 +228,26 @@ export function TaskDetail({
             </div>
             <span>•</span>
             <span>{format(new Date(taskState.createdAt), "PPP")}</span>
+            {taskState.labels.length > 0 && (
+              <>
+                <span>•</span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {taskState.labels.map((label) => (
+                    <Badge
+                      key={label.id}
+                      variant="outline"
+                      className="h-5 max-w-[140px] gap-1 border-muted/50 px-1.5 text-[10px] font-normal text-muted-foreground"
+                    >
+                      <span
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ backgroundColor: label.color }}
+                      />
+                      <span className="truncate">{label.name}</span>
+                    </Badge>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
