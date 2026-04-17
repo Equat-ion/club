@@ -202,7 +202,7 @@ export function CreateTaskDialog({
                   maxSelectedLabels={MAX_TASK_LABELS}
                   onSelect={(id) =>
                     setSelectedLabelIds((prev) =>
-                      prev.includes(id) ? prev : [...prev, id].slice(0, MAX_TASK_LABELS)
+                      [...new Set([...prev, id])].slice(0, MAX_TASK_LABELS)
                     )
                   }
                   onRemove={(id) => setSelectedLabelIds(prev => prev.filter(i => i !== id))}

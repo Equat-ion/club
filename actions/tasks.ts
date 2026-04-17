@@ -103,6 +103,9 @@ function emitHook<E extends HookEvent>(event: E, payload: HookPayload<E>): void 
   });
 }
 
+/**
+ * Normalizes task label IDs by removing duplicates while preserving order.
+ */
 function normalizeLabelIds(labelIds?: string[]): string[] {
   if (!labelIds || labelIds.length === 0) return [];
   return [...new Set(labelIds)];

@@ -111,11 +111,10 @@ export function TaskMetadataRow({
         maxSelectedLabels={MAX_TASK_LABELS}
         onSelect={(labelId) =>
           onUpdate({
-            labelIds: task.labels
-              .map((l) => l.id)
-              .includes(labelId)
-              ? task.labels.map((l) => l.id)
-              : [...task.labels.map((l) => l.id), labelId].slice(0, MAX_TASK_LABELS),
+            labelIds: [...new Set([...task.labels.map((l) => l.id), labelId])].slice(
+              0,
+              MAX_TASK_LABELS
+            ),
           })
         }
         onRemove={(labelId) => onUpdate({ labelIds: task.labels.map(l => l.id).filter(id => id !== labelId) })}
