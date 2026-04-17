@@ -11,6 +11,7 @@ import { AssigneeSelect } from "./assignee-select";
 import { TeamPicker } from "./team-picker";
 import { LabelPicker } from "./label-picker";
 import type { TaskWithDetails, OrgMember, Label, OrgTeam, TaskStatus, TaskPriority } from "@/lib/plugins/tasks-types";
+import { MAX_TASK_LABELS } from "@/lib/plugins/tasks-constants";
 
 interface TaskMetadataRowProps {
   task: TaskWithDetails;
@@ -92,7 +93,15 @@ export function TaskMetadataRow({
         orgId={orgId}
         availableLabels={labels}
         selectedLabelIds={task.labels.map(l => l.id)}
-        onSelect={(labelId) => onUpdate({ labelIds: [...task.labels.map(l => l.id), labelId] })}
+        maxSelectedLabels={MAX_TASK_LABELS}
+        onSelect={(labelId) =>
+          onUpdate({
+            labelIds: [...new Set([...task.labels.map((l) => l.id), labelId])].slice(
+              0,
+              MAX_TASK_LABELS
+            ),
+          })
+        }
         onRemove={(labelId) => onUpdate({ labelIds: task.labels.map(l => l.id).filter(id => id !== labelId) })}
       />
     </div>

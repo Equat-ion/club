@@ -28,6 +28,7 @@ interface LabelPickerProps {
   onSelect: (labelId: string) => void;
   onRemove: (labelId: string) => void;
   isAdmin?: boolean;
+  maxSelectedLabels?: number;
 }
 
 export function LabelPicker({ 
@@ -36,7 +37,8 @@ export function LabelPicker({
   selectedLabelIds, 
   onSelect, 
   onRemove,
-  isAdmin = false
+  isAdmin = false,
+  maxSelectedLabels,
 }: LabelPickerProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -48,6 +50,22 @@ export function LabelPicker({
   }, [availableLabels, search]);
 
   const exactMatch = availableLabels.find(l => l.name.toLowerCase() === search.toLowerCase());
+  const hasReachedSelectionLimit =
+    maxSelectedLabels !== undefined && selectedLabelIds.length >= maxSelectedLabels;
+
+  const selectLabel = (labelId: string) => {
+    if (selectedLabelIds.includes(labelId)) {
+      onRemove(labelId);
+      return;
+    }
+
+    if (hasReachedSelectionLimit) {
+      toast.error(`You can only add up to ${maxSelectedLabels} labels per task`);
+      return;
+    }
+
+    onSelect(labelId);
+  };
 
   const handleCreateLabel = async () => {
     if (!search.trim()) return;
@@ -55,7 +73,11 @@ export function LabelPicker({
     const res = await createLabel(orgId, { name: search, color: newLabelColor });
     if (res.success) {
       toast.success("Label created");
-      onSelect(res.labelId!);
+      if (hasReachedSelectionLimit) {
+        toast.info("Label created, but the task already has the maximum number of labels");
+      } else {
+        onSelect(res.labelId!);
+      }
       setSearch("");
       setIsCreating(false);
     } else {
@@ -134,7 +156,7 @@ export function LabelPicker({
                     <div
                       key={label.id}
                       className="flex items-center gap-2 px-3 py-2 hover:bg-muted cursor-pointer transition-colors group"
-                      onClick={() => isSelected ? onRemove(label.id) : onSelect(label.id)}
+                      onClick={() => selectLabel(label.id)}
                     >
                       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: label.color }} />
                       <span className="flex-1 text-sm">{label.name}</span>
@@ -162,7 +184,7 @@ export function LabelPicker({
                   onClick={() => setIsCreating(true)}
                 >
                   <Plus className="h-4 w-4" />
-                  Create "{search}"
+                  Create &quot;{search}&quot;
                 </div>
               )}
             </div>

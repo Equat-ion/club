@@ -36,6 +36,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { MAX_TASK_LABELS } from "@/lib/plugins/tasks-constants";
 
 interface CreateTaskDialogProps {
   orgId: string;
@@ -198,7 +199,12 @@ export function CreateTaskDialog({
                   orgId={orgId}
                   availableLabels={labels}
                   selectedLabelIds={selectedLabelIds}
-                  onSelect={(id) => setSelectedLabelIds(prev => [...prev, id])}
+                  maxSelectedLabels={MAX_TASK_LABELS}
+                  onSelect={(id) =>
+                    setSelectedLabelIds((prev) =>
+                      [...new Set([...prev, id])].slice(0, MAX_TASK_LABELS)
+                    )
+                  }
                   onRemove={(id) => setSelectedLabelIds(prev => prev.filter(i => i !== id))}
                 />
               </div>
