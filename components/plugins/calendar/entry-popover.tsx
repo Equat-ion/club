@@ -4,12 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverContent,
-  PopoverDescription,
-  PopoverHeader,
-  PopoverTitle,
-} from "@/components/ui/popover";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -108,7 +108,12 @@ export function EntryPopover({
     setStartTime(toInputTime(defaultDate));
     setEndDate(toInputDate(defaultEndDate));
     setEndTime(toInputTime(defaultEndDate));
-    setIsAllDay(false);
+    setIsAllDay(
+      defaultDate.getHours() === 0 &&
+        defaultDate.getMinutes() === 0 &&
+        defaultEndDate.getHours() === 23 &&
+        defaultEndDate.getMinutes() === 59
+    );
   }, [open, event, defaultCalendarId, defaultDate, defaultEndDate]);
 
   async function handleSave(): Promise<void> {
@@ -148,6 +153,7 @@ export function EntryPopover({
     if (!event || !canManageCalendar) {
       return;
     }
+
     setIsSubmitting(true);
     try {
       await onDelete(event.id);
@@ -158,16 +164,16 @@ export function EntryPopover({
   }
 
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
-      <PopoverContent side="right" align="start" className="w-[360px] space-y-4">
-        <PopoverHeader>
-          <PopoverTitle>{event ? "Edit event" : "Create event"}</PopoverTitle>
-          <PopoverDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px] space-y-4">
+        <DialogHeader>
+          <DialogTitle>{event ? "Edit event" : "Create event"}</DialogTitle>
+          <DialogDescription>
             {canManageCalendar
               ? "Update event details and calendar assignment."
               : "Read-only view for this event."}
-          </PopoverDescription>
-        </PopoverHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <div className="space-y-3">
           <div className="space-y-2">
@@ -317,7 +323,7 @@ export function EntryPopover({
             </Button>
           </div>
         </div>
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -52,13 +52,15 @@ export default async function CalendarPage({
   ]);
 
   return (
-    <CalendarPageClient
-      orgId={org.id}
-      orgSlug={slug}
-      actorRole={membership.role}
-      canManageCalendar={canManageCalendar(membership.role)}
-      initialCalendars={calendars}
-      initialEvents={events}
-    />
+    <div className="flex h-[calc(100vh-3.5rem)] flex-col overflow-hidden">
+      <CalendarPageClient
+        orgId={org.id}
+        orgSlug={slug}
+        actorRole={membership.role}
+        canManageCalendar={canManageCalendar(membership.role)}
+        initialCalendars={calendars}
+        initialEvents={events}
+      />
+    </div>
   );
 }

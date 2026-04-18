@@ -15,6 +15,7 @@ import {
 
 import { CalendarHeader } from "./calendar-header";
 import { CalendarSidebar } from "./calendar-sidebar";
+import { CreateCalendarDialog } from "./create-calendar-dialog";
 import { EntryPopover } from "./entry-popover";
 import { MonthView } from "./month-view";
 import { WeekView } from "./week-view";
@@ -40,18 +41,19 @@ export function CalendarPageClient({
   initialCalendars,
   initialEvents,
 }: CalendarPageClientProps) {
-  const initialStartDate = useMemo(() => new Date(), []);
+  const initialStartDate = useMemo(() => new Date(2026, 3, 15), []);
   const initialEndDate = useMemo(() => {
     const end = new Date(initialStartDate);
     end.setHours(end.getHours() + 1);
     return end;
   }, [initialStartDate]);
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date(2026, 3, 15));
   const [view, setView] = useState<CalendarViewMode>("week");
   const [calendars, setCalendars] = useState<CalendarRecord[]>(initialCalendars);
   const [events, setEvents] = useState<CalendarEventRecord[]>(initialEvents);
   const [isPopoverOpen, setPopoverOpen] = useState(false);
+  const [isCreateCalendarOpen, setCreateCalendarOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventRecord | null>(null);
   const [defaultStartDate, setDefaultStartDate] = useState(initialStartDate);
   const [defaultEndDate, setDefaultEndDate] = useState(initialEndDate);
@@ -100,18 +102,15 @@ export function CalendarPageClient({
     }
   }
 
-  async function handleCreateCalendar() {
+  async function handleCreateCalendar(name: string, color: string) {
     if (!canManageCalendar) return;
-
-    const name = window.prompt("Calendar name", "New Calendar");
-    if (!name) return;
 
     try {
       await createOrgCalendar({
         orgId,
         actorRole,
         name,
-        color: "#f97316",
+        color,
       });
       await refreshCalendarData();
       toast.success("Calendar created.");
@@ -219,7 +218,7 @@ export function CalendarPageClient({
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
         onToggleCalendar={handleToggleCalendar}
-        onCreateCalendar={handleCreateCalendar}
+        onCreateCalendar={() => setCreateCalendarOpen(true)}
       />
 
       <div className="min-h-0 flex-1">
@@ -257,9 +256,6 @@ export function CalendarPageClient({
             onSlotClick={(start, end) => openDraftPopover(start, end)}
             onEventClick={handleEventClick}
             onEventDrop={handleEventDrop}
-            onCreateEvent={async (draft) => {
-              await handleSave(draft);
-            }}
           />
         ) : (
           <MonthView
@@ -270,9 +266,7 @@ export function CalendarPageClient({
             onDayClick={setSelectedDate}
             onEventClick={handleEventClick}
             onEventDrop={handleEventDrop}
-            onCreateAllDayEvent={async (draft) => {
-              await handleSave(draft);
-            }}
+            onSlotClick={(start, end) => openDraftPopover(start, end)}
           />
         )}
 
@@ -286,6 +280,12 @@ export function CalendarPageClient({
           onOpenChange={setPopoverOpen}
           onSave={handleSave}
           onDelete={handleDelete}
+        />
+
+        <CreateCalendarDialog
+          open={isCreateCalendarOpen}
+          onOpenChange={setCreateCalendarOpen}
+          onSubmit={handleCreateCalendar}
         />
       </div>
     </div>

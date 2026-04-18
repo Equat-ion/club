@@ -10,8 +10,8 @@ type CalendarEntryProps = {
   event: CalendarEventRecord;
   style: CSSProperties;
   color: string;
-  onClick: () => void;
-  onDragStart?: (event: MouseEvent<HTMLElement>) => void;
+  onClick: (e: MouseEvent<HTMLButtonElement>) => void;
+  onDragStart?: (event: React.DragEvent<HTMLButtonElement>) => void;
   onResizeStart?: (
     event: MouseEvent<HTMLElement>,
     edge: "top" | "bottom"
@@ -30,19 +30,29 @@ export function CalendarEntry({
   isDragging = false,
   isResizing = false,
 }: CalendarEntryProps) {
+  // Convert hex color to rgba for background
+  const backgroundColor = `${color}20`; // 20% opacity
+  const borderColor = color;
+
   return (
     <button
       type="button"
       className={cn(
-        "absolute overflow-hidden rounded-sm border bg-background/90 text-left",
+        "absolute overflow-hidden rounded-md border text-left cursor-grab active:cursor-grabbing",
         "transition-all hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         (isDragging || isResizing) && "opacity-80 ring-2 ring-primary"
       )}
-      style={style}
+      style={{
+        ...style,
+        backgroundColor: backgroundColor,
+        borderColor: borderColor,
+        borderLeftWidth: '4px',
+      }}
       onClick={onClick}
       onMouseDown={(mouseEvent) => {
+        mouseEvent.stopPropagation();
         if (onDragStart) {
-          onDragStart(mouseEvent);
+          onDragStart(mouseEvent as any);
         }
       }}
     >
@@ -56,12 +66,13 @@ export function CalendarEntry({
         />
       ) : null}
 
-      <div className="flex h-full items-center gap-2 px-2 py-1">
-        <span
-          className="h-full w-1 shrink-0 rounded-full"
-          style={{ backgroundColor: color }}
-        />
-        <span className="truncate text-xs font-medium">{event.title}</span>
+      <div className="flex h-full w-full flex-col pl-2 pr-1 py-1">
+        <span className="truncate text-xs font-semibold" style={{ color: color }}>
+          {event.title}
+        </span>
+        <span className="truncate text-[10px] opacity-80" style={{ color: color }}>
+          {new Date(event.startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} - {new Date(event.endTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+        </span>
       </div>
 
       {onResizeStart ? (

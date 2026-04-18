@@ -1,6 +1,7 @@
 "use client";
 
 import { isSameDay } from "date-fns";
+import { useState } from "react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -12,7 +13,7 @@ import {
   toDate,
 } from "./calendar-utils";
 import { CalendarEntry } from "./calendar-entry";
-import type { CalendarEventDraft, CalendarEventRecord, CalendarRecord } from "./types";
+import type { CalendarEventRecord, CalendarRecord } from "./types";
 
 const HOUR_HEIGHT = 56;
 const DAY_START_MINUTES = 0;
@@ -26,7 +27,6 @@ type WeekViewProps = {
   onSlotClick: (start: Date, end: Date) => void;
   onEventClick: (event: CalendarEventRecord) => void;
   onEventDrop: (event: CalendarEventRecord, start: Date, end: Date) => void;
-  onCreateEvent: (draft: CalendarEventDraft) => void;
 };
 
 function minutesToPixels(minutes: number): number {
@@ -45,14 +45,63 @@ export function WeekView({
   onSlotClick,
   onEventClick,
   onEventDrop,
-  onCreateEvent,
 }: WeekViewProps) {
   const { days } = getWeekRange(date);
-
   const calendarMap = new Map(calendars.map((calendar) => [calendar.id, calendar]));
 
+  const [dragState, setDragState] = useState<{ day: Date; startMinutes: number; currentMinutes: number } | null>(null);
+  const [draggedEvent, setDraggedEvent] = useState<{ event: CalendarEventRecord; offsetMinutes: number } | null>(null);
+  const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
+  const [hoveredMinutes, setHoveredMinutes] = useState<number | null>(null);
+
+  const handleMouseDown = (day: Date, mouseEvent: React.MouseEvent<HTMLDivElement>) => {
+    if (!canManageCalendar) return;
+    if (mouseEvent.button !== 0) return;
+    
+    if (!draggedEvent) {
+      const rect = mouseEvent.currentTarget.getBoundingClientRect();
+      const y = mouseEvent.clientY - rect.top;
+      const snapped = clamp(Math.round((y / HOUR_HEIGHT) * 60 / 15) * 15, 0, 23 * 60 + 45);
+      setDragState({ day, startMinutes: snapped, currentMinutes: snapped });
+    }
+  };
+
+  const handleMouseMove = (day: Date, mouseEvent: React.MouseEvent<HTMLDivElement>) => {
+    const rect = mouseEvent.currentTarget.getBoundingClientRect();
+    const y = mouseEvent.clientY - rect.top;
+    const snapped = clamp(Math.round((y / HOUR_HEIGHT) * 60 / 15) * 15, 0, 23 * 60 + 45);
+
+    if (draggedEvent) {
+      setHoveredDay(day);
+      setHoveredMinutes(snapped);
+      return;
+    }
+
+    if (dragState && dragState.day.getTime() === day.getTime()) {
+      setDragState((prev) => prev ? { ...prev, currentMinutes: snapped } : null);
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (draggedEvent && hoveredDay && hoveredMinutes !== null) {
+      const { event, offsetMinutes } = draggedEvent;
+      const duration = toDate(event.endTime).getTime() - toDate(event.startTime).getTime();
+      const newStart = new Date(hoveredDay);
+      newStart.setHours(0, hoveredMinutes - offsetMinutes, 0, 0);
+      onEventDrop(event, newStart, new Date(newStart.getTime() + duration));
+    } else if (dragState) {
+      const s = Math.min(dragState.startMinutes, dragState.currentMinutes);
+      const e = Math.max(dragState.startMinutes, dragState.currentMinutes);
+      const start = new Date(dragState.day); start.setHours(0, s, 0, 0);
+      const end = new Date(dragState.day); end.setHours(0, s === e ? s + 60 : e, 0, 0);
+      onSlotClick(start, end);
+    }
+
+    setDragState(null); setDraggedEvent(null); setHoveredDay(null); setHoveredMinutes(null);
+  };
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
       <div className="grid grid-cols-[56px_repeat(7,minmax(0,1fr))] border-b bg-background px-2 py-2">
         <div />
         {days.map((day) => (
@@ -63,109 +112,53 @@ export function WeekView({
       </div>
 
       <ScrollArea className="h-full">
-        <div className="grid grid-cols-[56px_repeat(7,minmax(0,1fr))] px-2">
+        <div className="grid grid-cols-[56px_repeat(7,minmax(0,1fr))] px-2 mt-2">
           <div className="border-r">
             {Array.from({ length: 24 }).map((_, hour) => (
-              <div
-                key={hour}
-                className="relative border-b text-right text-[10px] text-muted-foreground"
-                style={{ height: `${HOUR_HEIGHT}px` }}
-              >
-                <span className="absolute -top-2 right-2 bg-background px-1">
-                  {hour === 0
-                    ? "12 AM"
-                    : hour < 12
-                      ? `${hour} AM`
-                      : hour === 12
-                        ? "12 PM"
-                        : `${hour - 12} PM`}
-                </span>
+              <div key={hour} className="relative border-b text-right text-[10px] text-muted-foreground" style={{ height: `${HOUR_HEIGHT}px` }}>
+                <span className="absolute -top-2 right-2 bg-background px-1">{hour === 0 ? "12 AM" : hour < 12 ? `${hour} AM` : hour === 12 ? "12 PM" : `${hour - 12} PM`}</span>
               </div>
             ))}
           </div>
 
           {days.map((day) => {
-            const dayEvents = events.filter((event) => {
-              const eventStart = toDate(event.startTime);
-              return isSameDay(eventStart, day);
-            });
-
-            const overlapInput = dayEvents.map((event) => ({
-              id: event.id,
-              start: toDate(event.startTime),
-              end: toDate(event.endTime),
-            }));
-
-            const columns = calculateOverlappingColumns(overlapInput);
+            const dayEvents = events.filter((e) => isSameDay(toDate(e.startTime), day));
+            const columns = calculateOverlappingColumns(dayEvents.map(e => ({ id: e.id, start: toDate(e.startTime), end: toDate(e.endTime) })));
 
             return (
-              <div
-                key={day.toISOString()}
-                className="relative border-r"
-                style={{ height: `${24 * HOUR_HEIGHT}px` }}
-                onDoubleClick={(mouseEvent) => {
-                  if (!canManageCalendar) return;
-                  const target = mouseEvent.currentTarget;
-                  const rect = target.getBoundingClientRect();
-                  const y = mouseEvent.clientY - rect.top;
-                  const rawMinutes = (y / HOUR_HEIGHT) * 60;
-                  const snappedMinutes = clamp(Math.round(rawMinutes / 15) * 15, 0, 23 * 60 + 45);
-
-                  const start = new Date(day);
-                  start.setHours(0, snappedMinutes, 0, 0);
-                  const end = new Date(start);
-                  end.setMinutes(end.getMinutes() + 60);
-                  onSlotClick(start, end);
-                }}
+              <div key={day.toISOString()} className="relative border-r select-none" style={{ height: `${24 * HOUR_HEIGHT}px` }}
+                onMouseDown={(e) => handleMouseDown(day, e)}
+                onMouseMove={(e) => handleMouseMove(day, e)}
               >
-                {Array.from({ length: 24 }).map((_, hour) => (
-                  <div
-                    key={`${day.toISOString()}-${hour}`}
-                    className="border-b"
-                    style={{ height: `${HOUR_HEIGHT}px` }}
-                  />
-                ))}
+                {Array.from({ length: 24 }).map((_, h) => <div key={h} className="border-b" style={{ height: `${HOUR_HEIGHT}px` }} />)}
 
-                {columns.map((column) => {
-                  const event = dayEvents.find((item) => item.id === column.id);
-                  if (!event) return null;
-
+                {columns.map((col) => {
+                  const event = dayEvents.find((e) => e.id === col.id)!;
                   const { startMinutes, endMinutes } = getEventMinutesForDay(event, day);
-                  const top = minutesToPixels(clamp(startMinutes, DAY_START_MINUTES, DAY_END_MINUTES));
-                  const bottom = minutesToPixels(
-                    clamp(endMinutes, DAY_START_MINUTES + 15, DAY_END_MINUTES)
-                  );
-                  const height = Math.max(18, bottom - top);
-
-                  const widthPercent = 100 / column.totalColumns;
-                  const leftPercent = column.column * widthPercent;
-
                   const calendar = calendarMap.get(event.calendarId);
-                  const color = calendar?.color ?? "#f97316";
-
+                  
                   return (
                     <CalendarEntry
                       key={event.id}
                       event={event}
-                      color={color}
-                      style={{
-                        top,
-                        height,
-                        left: `calc(${leftPercent}% + 2px)`,
-                        width: `calc(${widthPercent}% - 4px)`,
+                      color={calendar?.color ?? "#f97316"}
+                      style={{ top: minutesToPixels(startMinutes), height: minutesToPixels(endMinutes - startMinutes), left: `${(col.column * 100) / col.totalColumns}%`, width: `${100 / col.totalColumns}%`, opacity: draggedEvent?.event.id === event.id ? 0.3 : 1 }}
+                      onClick={(e) => { e.stopPropagation(); onEventClick(event); }}
+                      onDragStart={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setDraggedEvent({ event, offsetMinutes: Math.round((e.clientY - rect.top) / (HOUR_HEIGHT / 4)) * 15 });
                       }}
-                      onClick={() => onEventClick(event)}
-                      onDragStart={canManageCalendar ? () => onEventDrop(event, toDate(event.startTime), toDate(event.endTime)) : undefined}
-                      onResizeStart={undefined}
-                      isDragging={false}
-                      isResizing={false}
                     />
                   );
                 })}
 
-                {!canManageCalendar ? (
-                  <div className={cn("pointer-events-none absolute inset-0 bg-transparent")} />
-                ) : null}
+                {draggedEvent && hoveredDay && hoveredDay.getTime() === day.getTime() && hoveredMinutes !== null && (
+                  <div className="absolute bg-primary/30 border border-primary rounded-md pointer-events-none" style={{
+                    top: minutesToPixels(hoveredMinutes - draggedEvent.offsetMinutes),
+                    height: minutesToPixels(toDate(draggedEvent.event.endTime).getTime() - toDate(draggedEvent.event.startTime).getTime()) / 60000 / 60 * HOUR_HEIGHT,
+                    left: '2px', right: '2px', zIndex: 100
+                  }} />
+                )}
               </div>
             );
           })}
