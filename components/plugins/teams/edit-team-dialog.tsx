@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -53,15 +53,6 @@ export function EditTeamDialog({
   const [description, setDescription] = useState(team.description || "");
   const [selectedColor, setSelectedColor] = useState(team.color || PRESET_COLORS[0].value);
 
-  // Use a effect to update state when team prop changes, but only if open
-  useEffect(() => {
-    if (open) {
-      setName(team.name);
-      setDescription(team.description || "");
-      setSelectedColor(team.color || PRESET_COLORS[0].value);
-    }
-  }, [team, open]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -84,7 +75,17 @@ export function EditTeamDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) {
+          setName(team.name);
+          setDescription(team.description || "");
+          setSelectedColor(team.color || PRESET_COLORS[0].value);
+        }
+        onOpenChange(nextOpen);
+      }}
+    >
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>

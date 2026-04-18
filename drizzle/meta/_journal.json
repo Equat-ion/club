@@ -29,6 +29,13 @@
       "when": 1776165377885,
       "tag": "0003_colossal_goliath",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776501525074,
+      "tag": "0004_calendar_plugin",
+      "breakpoints": true
     }
   ]
 }

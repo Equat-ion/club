@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight, CheckSquare, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import type { TaskWithDetails } from "@/lib/plugins/tasks-types";
 
 interface DashboardWidgetProps {
@@ -59,18 +59,6 @@ export function DashboardWidget({ tasks, orgSlug }: DashboardWidgetProps) {
           {tasks.length} {tasks.length === 1 ? "task" : "tasks"} assigned to you
         </p>
       </div>
-    </div>
-  );
-}
-
-function Badge({ children, variant, className }: any) {
-  return (
-    <div className={cn(
-      "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-      variant === "outline" ? "text-foreground border-border" : "bg-primary text-primary-foreground",
-      className
-    )}>
-      {children}
     </div>
   );
 }

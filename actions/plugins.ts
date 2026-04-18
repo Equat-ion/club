@@ -17,6 +17,7 @@ import {
 import { eq, and, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { initHooks, hooksRegistry } from "@/lib/hooks";
+import { ensureCalendarPluginSeed } from "@/actions/calendar";
 
 // Register all plugin hook handlers once at module load.
 initHooks();
@@ -172,6 +173,10 @@ export async function togglePlugin(
             )
         );
 
+    if (toEnableIds.includes("calendar")) {
+        await ensureCalendarPluginSeed(orgId);
+    }
+
     await revalidatePluginPaths(orgId);
 
     const cascadedNames = missing.map((p) => p.name);
@@ -278,6 +283,10 @@ export async function installPlugin(
             )
         );
 
+    if (toForceEnableIds.includes("calendar")) {
+        await ensureCalendarPluginSeed(orgId);
+    }
+
     await revalidatePluginPaths(orgId);
 
     // 3. Emit hook events
@@ -305,4 +314,3 @@ export async function installPlugin(
         ...(cascadedNames.length > 0 ? { cascaded: cascadedNames } : {})
     };
 }
-

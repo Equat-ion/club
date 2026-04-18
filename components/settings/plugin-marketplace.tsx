@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Package, Plus, Layers } from "lucide-react";
+import { createElement, useState } from "react";
+import { Package, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -12,11 +12,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
     Card,
     CardContent,
@@ -39,6 +34,22 @@ import { PLUGINS, type Plugin, getTransitiveDependencies } from "@/lib/plugins/r
 import { resolvePluginIcon } from "@/lib/plugins/icon-resolver";
 import { installPlugin, type InstalledPlugin } from "@/actions/plugins";
 import { toast } from "sonner";
+
+type PlanTier = Plugin["plans"][number];
+
+const RESOLVED_PLUGIN_ICONS: Record<string, ReturnType<typeof resolvePluginIcon>> =
+    Object.fromEntries(
+        PLUGINS.map((plugin) => [plugin.id, resolvePluginIcon(plugin.icon)])
+    );
+const FALLBACK_PLUGIN_ICON = resolvePluginIcon("CheckSquare");
+
+function normalizePlan(plan: string): PlanTier {
+    if (plan === "plus" || plan === "enterprise") {
+        return plan;
+    }
+
+    return "free";
+}
 
 // ============================================================================
 // Shared Utilities
@@ -74,9 +85,6 @@ function PluginRow({ plugin, orgId, orgSlug, enabledPluginIds, onToggled }: Plug
     const [dialogOpen, setDialogOpen] = useState(false);
     const [pendingEnabled, setPendingEnabled] = useState<boolean | null>(null);
 
-    const registryPlugin = PLUGINS.find((p) => p.id === plugin.pluginId);
-    const Icon = registryPlugin ? resolvePluginIcon(registryPlugin.icon) : null;
-
     function handleSwitchClick() {
         setPendingEnabled(!plugin.enabled);
         setDialogOpen(true);
@@ -94,11 +102,12 @@ function PluginRow({ plugin, orgId, orgSlug, enabledPluginIds, onToggled }: Plug
                 {/* Name — icon + plugin name */}
                 <TableCell>
                     <div className="flex items-center gap-3">
-                        {Icon && (
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-muted">
-                                <Icon className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                        )}
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border bg-muted">
+                            {createElement(
+                                RESOLVED_PLUGIN_ICONS[plugin.pluginId] ?? FALLBACK_PLUGIN_ICON,
+                                { className: "h-4 w-4 text-muted-foreground" }
+                            )}
+                        </div>
                         <span className="text-sm font-medium">{plugin.name}</span>
                     </div>
                 </TableCell>
@@ -163,13 +172,9 @@ function MarketplaceCard({ plugin, orgId, isInstalled, isLocked, onInstalled, in
     const [installing, setInstalling] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
 
-    const Icon = resolvePluginIcon(plugin.icon);
-
     // Filter to only those dependencies that actually need to be installed now
     const dependencies = getTransitiveDependencies(plugin.id);
     const missingDepsToInstall = dependencies.filter(p => !installedPluginIds.includes(p.id));
-    const missingDepNames = missingDepsToInstall.map(d => d.name);
-
     async function handleInstallConfirm() {
         setInstalling(true);
         const result = await installPlugin(orgId, plugin.id);
@@ -203,7 +208,10 @@ function MarketplaceCard({ plugin, orgId, isInstalled, isLocked, onInstalled, in
                 <CardHeader>
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border bg-muted">
-                            <Icon className="h-5 w-5 text-muted-foreground" />
+                            {createElement(
+                                RESOLVED_PLUGIN_ICONS[plugin.id] ?? FALLBACK_PLUGIN_ICON,
+                                { className: "h-5 w-5 text-muted-foreground" }
+                            )}
                         </div>
                         <div className="flex flex-col gap-1 items-end">
                             {isInstalled ? (
@@ -286,10 +294,12 @@ function MarketplaceCard({ plugin, orgId, isInstalled, isLocked, onInstalled, in
                             <CardContent className="px-4 pb-4">
                                 <ul className="space-y-2">
                                     {missingDepsToInstall.map(dep => {
-                                        const DepIcon = resolvePluginIcon(dep.icon);
                                         return (
                                             <li key={dep.id} className="flex items-center gap-2 text-sm">
-                                                <DepIcon className="h-4 w-4 text-muted-foreground" />
+                                                {createElement(
+                                                    RESOLVED_PLUGIN_ICONS[dep.id] ?? FALLBACK_PLUGIN_ICON,
+                                                    { className: "h-4 w-4 text-muted-foreground" }
+                                                )}
                                                 <span className="font-medium">{dep.name}</span>
                                             </li>
                                         );
@@ -326,6 +336,7 @@ type PluginMarketplaceProps = {
 
 export function PluginMarketplace({ initialPlugins, orgId, orgSlug, plan }: PluginMarketplaceProps) {
     const [plugins, setPlugins] = useState<InstalledPlugin[]>(initialPlugins);
+    const normalizedPlan = normalizePlan(plan);
 
     const installedPluginIds = plugins.map((p) => p.pluginId);
     const enabledPluginIds = plugins.filter((p) => p.enabled).map((p) => p.pluginId);
@@ -448,14 +459,14 @@ export function PluginMarketplace({ initialPlugins, orgId, orgSlug, plan }: Plug
                 <div>
                     <h2 className="text-base font-semibold">Discover</h2>
                     <p className="text-sm text-muted-foreground">
-                        Expand your organization's capabilities with new tools.
+                        Expand your organization&apos;s capabilities with new tools.
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {PLUGINS.map(plugin => {
                         const isInstalled = plugins.some(p => p.pluginId === plugin.id);
-                        const isLocked = !plugin.plans.includes(plan as any);
+                        const isLocked = !plugin.plans.includes(normalizedPlan);
 
                         return (
                             <MarketplaceCard
