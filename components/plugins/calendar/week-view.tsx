@@ -1,10 +1,9 @@
 "use client";
 
 import { isSameDay } from "date-fns";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
 
 import {
   calculateOverlappingColumns,
@@ -37,6 +36,10 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+function snapToQuarterHour(minutes: number): number {
+  return Math.round(minutes / 15) * 15;
+}
+
 export function WeekView({
   date,
   events,
@@ -51,44 +54,91 @@ export function WeekView({
 
   const [dragState, setDragState] = useState<{ day: Date; startMinutes: number; currentMinutes: number } | null>(null);
   const [draggedEvent, setDraggedEvent] = useState<{ event: CalendarEventRecord; offsetMinutes: number } | null>(null);
+  const [resizingEvent, setResizingEvent] = useState<{
+    event: CalendarEventRecord;
+    day: Date;
+    edge: "top" | "bottom";
+    anchorMinutes: number;
+    currentMinutes: number;
+  } | null>(null);
   const [hoveredDay, setHoveredDay] = useState<Date | null>(null);
   const [hoveredMinutes, setHoveredMinutes] = useState<number | null>(null);
+  const suppressEventClickRef = useRef(false);
+
+  const suppressNextEventClick = () => {
+    suppressEventClickRef.current = true;
+    window.setTimeout(() => {
+      suppressEventClickRef.current = false;
+    }, 0);
+  };
+
+  const getMinutesFromPointer = (
+    mouseEvent: React.MouseEvent<HTMLDivElement>,
+    maxMinutes: number
+  ) => {
+    const rect = mouseEvent.currentTarget.getBoundingClientRect();
+    const y = mouseEvent.clientY - rect.top;
+    return clamp(snapToQuarterHour((y / HOUR_HEIGHT) * 60), 0, maxMinutes);
+  };
 
   const handleMouseDown = (day: Date, mouseEvent: React.MouseEvent<HTMLDivElement>) => {
     if (!canManageCalendar) return;
     if (mouseEvent.button !== 0) return;
     
     if (!draggedEvent) {
-      const rect = mouseEvent.currentTarget.getBoundingClientRect();
-      const y = mouseEvent.clientY - rect.top;
-      const snapped = clamp(Math.round((y / HOUR_HEIGHT) * 60 / 15) * 15, 0, 23 * 60 + 45);
+      const snapped = getMinutesFromPointer(mouseEvent, 23 * 60 + 45);
       setDragState({ day, startMinutes: snapped, currentMinutes: snapped });
     }
   };
 
   const handleMouseMove = (day: Date, mouseEvent: React.MouseEvent<HTMLDivElement>) => {
-    const rect = mouseEvent.currentTarget.getBoundingClientRect();
-    const y = mouseEvent.clientY - rect.top;
-    const snapped = clamp(Math.round((y / HOUR_HEIGHT) * 60 / 15) * 15, 0, 23 * 60 + 45);
-
     if (draggedEvent) {
+      const snapped = getMinutesFromPointer(mouseEvent, 23 * 60 + 45);
       setHoveredDay(day);
       setHoveredMinutes(snapped);
       return;
     }
 
+    if (resizingEvent) {
+      if (resizingEvent.day.getTime() === day.getTime()) {
+        const snapped = getMinutesFromPointer(mouseEvent, DAY_END_MINUTES);
+        setResizingEvent((prev) => (prev ? { ...prev, currentMinutes: snapped } : null));
+      }
+      return;
+    }
+
     if (dragState && dragState.day.getTime() === day.getTime()) {
+      const snapped = getMinutesFromPointer(mouseEvent, 23 * 60 + 45);
       setDragState((prev) => prev ? { ...prev, currentMinutes: snapped } : null);
     }
   };
 
   const handleMouseUp = () => {
-    if (draggedEvent && hoveredDay && hoveredMinutes !== null) {
+    if (resizingEvent) {
+      const { event, day, edge, anchorMinutes, currentMinutes } = resizingEvent;
+      const nextStartMinutes =
+        edge === "top"
+          ? clamp(Math.min(currentMinutes, anchorMinutes - 15), DAY_START_MINUTES, anchorMinutes - 15)
+          : anchorMinutes;
+      const nextEndMinutes =
+        edge === "bottom"
+          ? clamp(Math.max(currentMinutes, anchorMinutes + 15), anchorMinutes + 15, DAY_END_MINUTES)
+          : anchorMinutes;
+
+      const nextStart = new Date(day);
+      nextStart.setHours(0, nextStartMinutes, 0, 0);
+      const nextEnd = new Date(day);
+      nextEnd.setHours(0, nextEndMinutes, 0, 0);
+
+      onEventDrop(event, nextStart, nextEnd);
+      suppressNextEventClick();
+    } else if (draggedEvent && hoveredDay && hoveredMinutes !== null) {
       const { event, offsetMinutes } = draggedEvent;
       const duration = toDate(event.endTime).getTime() - toDate(event.startTime).getTime();
       const newStart = new Date(hoveredDay);
       newStart.setHours(0, hoveredMinutes - offsetMinutes, 0, 0);
       onEventDrop(event, newStart, new Date(newStart.getTime() + duration));
+      suppressNextEventClick();
     } else if (dragState) {
       const s = Math.min(dragState.startMinutes, dragState.currentMinutes);
       const e = Math.max(dragState.startMinutes, dragState.currentMinutes);
@@ -97,7 +147,11 @@ export function WeekView({
       onSlotClick(start, end);
     }
 
-    setDragState(null); setDraggedEvent(null); setHoveredDay(null); setHoveredMinutes(null);
+    setDragState(null);
+    setDraggedEvent(null);
+    setResizingEvent(null);
+    setHoveredDay(null);
+    setHoveredMinutes(null);
   };
 
   return (
@@ -136,18 +190,61 @@ export function WeekView({
                   const event = dayEvents.find((e) => e.id === col.id)!;
                   const { startMinutes, endMinutes } = getEventMinutesForDay(event, day);
                   const calendar = calendarMap.get(event.calendarId);
+                  const isResizingThisEvent = resizingEvent?.event.id === event.id;
+                  const previewStartMinutes =
+                    isResizingThisEvent && resizingEvent.edge === "top"
+                      ? clamp(
+                          Math.min(resizingEvent.currentMinutes, resizingEvent.anchorMinutes - 15),
+                          DAY_START_MINUTES,
+                          resizingEvent.anchorMinutes - 15
+                        )
+                      : startMinutes;
+                  const previewEndMinutes =
+                    isResizingThisEvent && resizingEvent.edge === "bottom"
+                      ? clamp(
+                          Math.max(resizingEvent.currentMinutes, resizingEvent.anchorMinutes + 15),
+                          resizingEvent.anchorMinutes + 15,
+                          DAY_END_MINUTES
+                        )
+                      : endMinutes;
                   
                   return (
                     <CalendarEntry
                       key={event.id}
                       event={event}
                       color={calendar?.color ?? "#f97316"}
-                      style={{ top: minutesToPixels(startMinutes), height: minutesToPixels(endMinutes - startMinutes), left: `${(col.column * 100) / col.totalColumns}%`, width: `${100 / col.totalColumns}%`, opacity: draggedEvent?.event.id === event.id ? 0.3 : 1 }}
-                      onClick={(e) => { e.stopPropagation(); onEventClick(event); }}
+                      style={{
+                        top: minutesToPixels(previewStartMinutes),
+                        height: minutesToPixels(previewEndMinutes - previewStartMinutes),
+                        left: `${(col.column * 100) / col.totalColumns}%`,
+                        width: `${100 / col.totalColumns}%`,
+                        opacity: draggedEvent?.event.id === event.id ? 0.3 : 1,
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (suppressEventClickRef.current) {
+                          suppressEventClickRef.current = false;
+                          return;
+                        }
+                        onEventClick(event);
+                      }}
                       onDragStart={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
                           setDraggedEvent({ event, offsetMinutes: Math.round((e.clientY - rect.top) / (HOUR_HEIGHT / 4)) * 15 });
                       }}
+                      onResizeStart={(mouseEvent, edge) => {
+                        if (!canManageCalendar) return;
+                        if (mouseEvent.button !== 0) return;
+                        const minutes = getEventMinutesForDay(event, day);
+                        setResizingEvent({
+                          event,
+                          day,
+                          edge,
+                          anchorMinutes: edge === "top" ? minutes.endMinutes : minutes.startMinutes,
+                          currentMinutes: edge === "top" ? minutes.startMinutes : minutes.endMinutes,
+                        });
+                      }}
+                      isResizing={isResizingThisEvent}
                     />
                   );
                 })}

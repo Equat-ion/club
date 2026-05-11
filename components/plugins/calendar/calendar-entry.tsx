@@ -11,7 +11,7 @@ type CalendarEntryProps = {
   style: CSSProperties;
   color: string;
   onClick: (e: MouseEvent<HTMLButtonElement>) => void;
-  onDragStart?: (event: React.DragEvent<HTMLButtonElement>) => void;
+  onDragStart?: (event: MouseEvent<HTMLButtonElement>) => void;
   onResizeStart?: (
     event: MouseEvent<HTMLElement>,
     edge: "top" | "bottom"
@@ -52,7 +52,7 @@ export function CalendarEntry({
       onMouseDown={(mouseEvent) => {
         mouseEvent.stopPropagation();
         if (onDragStart) {
-          onDragStart(mouseEvent as any);
+          onDragStart(mouseEvent);
         }
       }}
     >
