@@ -49,6 +49,17 @@ export const PLUGINS: Plugin[] = [
     version: "1.0.0",
   },
   {
+    id: "calendar",
+    name: "Calendar",
+    description: "Team calendar with week and month planning views",
+    slug: "calendar",
+    icon: "CalendarDays",
+    plans: ["free", "plus", "enterprise"],
+    defaultEnabled: false,
+    category: "productivity",
+    version: "1.0.0",
+  },
+  {
     id: "chat",
     name: "Chat",
     description: "Real-time messaging for your organization members",

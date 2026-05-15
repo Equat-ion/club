@@ -12,6 +12,7 @@ const SECTION_LABELS: Record<string, string> = {
   settings: "Settings",
   billing: "Billing",
   plugins: "Plugins",
+  calendar: "Calendar",
 };
 
 export function AppBreadcrumb() {

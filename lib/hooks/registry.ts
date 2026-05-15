@@ -14,6 +14,50 @@
 // ---------------------------------------------------------------------------
 
 export type HookEventMap = {
+    "calendar:created": {
+        orgId: string;
+        calendarId: string;
+        name: string;
+        actorId: string;
+    };
+
+    "calendar:updated": {
+        orgId: string;
+        calendarId: string;
+        changes: {
+            name?: string;
+            color?: string;
+            isVisible?: boolean;
+        };
+        actorId: string;
+    };
+
+    "calendar:deleted": {
+        orgId: string;
+        calendarId: string;
+        actorId: string;
+    };
+
+    "calendar:event_created": {
+        orgId: string;
+        eventId: string;
+        calendarId: string;
+        actorId: string;
+    };
+
+    "calendar:event_updated": {
+        orgId: string;
+        eventId: string;
+        calendarId: string;
+        actorId: string;
+    };
+
+    "calendar:event_deleted": {
+        orgId: string;
+        eventId: string;
+        actorId: string;
+    };
+
     /** Fired after a task (issue) is successfully created. */
     "task:created": {
         orgId: string;

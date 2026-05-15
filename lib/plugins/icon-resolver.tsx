@@ -9,6 +9,7 @@
 
 import {
     CheckSquare,
+    CalendarDays,
     Users,
     MessageSquare,
     Globe,
@@ -22,6 +23,7 @@ import type { ComponentType } from "react";
 /** Map of every icon string used in the plugin registry to its React component. */
 const ICON_MAP: Record<string, LucideIcon> = {
     CheckSquare,
+    CalendarDays,
     Users,
     MessageSquare,
     Globe,

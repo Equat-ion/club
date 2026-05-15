@@ -23,6 +23,7 @@
 
 import { registerTaskHooks } from "./plugins/tasks";
 import { registerPluginLifecycleHooks } from "./plugins/plugins";
+import { registerCalendarHooks } from "./plugins/calendar";
 
 export { hooksRegistry } from "./registry";
 export type { HookEvent, HookEventMap, HookPayload, HookHandler } from "./registry";
@@ -40,4 +41,5 @@ export function initHooks(): void {
 
     registerTaskHooks();
     registerPluginLifecycleHooks();
+    registerCalendarHooks();
 }

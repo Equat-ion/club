@@ -72,3 +72,7 @@ export const DISPLAY_NAME_TO_ROLE: Record<string, string> = {
   Lead: "admin",
   Member: "member",
 } as const;
+
+export function canManageCalendar(role: string): boolean {
+  return role === "owner" || role === "admin";
+}
