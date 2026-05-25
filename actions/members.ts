@@ -4,8 +4,19 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
-import { member, user, invitation, organization } from "@/lib/db/schema/auth";
-import { eq, and, desc } from "drizzle-orm";
+import {
+  member,
+  user,
+  invitation,
+  organization,
+  orgProfiles,
+  memberRoleAssignments,
+  orgRoles,
+  enterpriseMemberState,
+} from "@/lib/db/schema";
+import { eq, and, desc, inArray } from "drizzle-orm";
+import { createId } from "@paralleldrive/cuid2";
+import { requireOrgPermission } from "@/lib/authz/guards";
 
 // ============================================================
 // Types
@@ -22,6 +33,9 @@ export type MemberWithUser = {
     email: string;
     image: string | null;
   };
+  enterpriseStatus?: "active" | "pending_review" | "deprovisioned" | "suspended" | null;
+  provisionSource?: "scim" | "saml" | "manual" | null;
+  assignedRoles?: Array<{ id: string; key: string; name: string }>;
 };
 
 export type PendingInvitation = {
@@ -57,18 +71,48 @@ export async function getMembers(orgId: string): Promise<MemberWithUser[]> {
     .where(eq(member.organizationId, orgId))
     .orderBy(desc(member.createdAt));
 
-  return memberships.map((m) => ({
-    id: m.id,
-    role: m.role,
-    createdAt: m.createdAt,
-    userId: m.userId,
-    user: {
-      id: m.userId,
-      name: m.userName,
-      email: m.userEmail,
-      image: m.userImage,
-    },
-  }));
+  if (memberships.length === 0) return [];
+
+  const memberIds = memberships.map((m) => m.id);
+
+  // Fetch enterprise states
+  const states = await db
+    .select()
+    .from(enterpriseMemberState)
+    .where(eq(enterpriseMemberState.orgId, orgId));
+
+  // Fetch role assignments
+  const assignments = await db
+    .select({
+      id: orgRoles.id,
+      memberId: memberRoleAssignments.memberId,
+      key: orgRoles.key,
+      name: orgRoles.name,
+    })
+    .from(memberRoleAssignments)
+    .innerJoin(orgRoles, eq(memberRoleAssignments.roleId, orgRoles.id))
+    .where(inArray(memberRoleAssignments.memberId, memberIds));
+
+  return memberships.map((m) => {
+    const state = states.find((s) => s.memberId === m.id);
+    const memberAssignments = assignments.filter((a) => a.memberId === m.id);
+
+    return {
+      id: m.id,
+      role: m.role,
+      createdAt: m.createdAt,
+      userId: m.userId,
+      user: {
+        id: m.userId,
+        name: m.userName,
+        email: m.userEmail,
+        image: m.userImage,
+      },
+      enterpriseStatus: state ? (state.status as any) : null,
+      provisionSource: state ? (state.provisionSource as any) : null,
+      assignedRoles: memberAssignments.map((a) => ({ id: a.id, key: a.key, name: a.name })),
+    };
+  });
 }
 
 /**
@@ -142,14 +186,33 @@ export async function inviteMember(
   role: OrgRole
 ) {
   try {
-    await auth.api.createInvitation({
-      headers: await headers(),
-      body: {
-        email,
-        role,
-        organizationId: orgId,
-      },
+    const orgProfile = await db.query.orgProfiles.findFirst({
+      where: eq(orgProfiles.id, orgId),
     });
+
+    if (!orgProfile) {
+      throw new Error("Organization profile not found");
+    }
+
+    if (!orgProfile.enterpriseModeEnabled) {
+      await auth.api.createInvitation({
+        headers: await headers(),
+        body: {
+          email,
+          role,
+          organizationId: orgId,
+        },
+      });
+    } else {
+      await auth.api.createInvitation({
+        headers: await headers(),
+        body: {
+          email,
+          role: "member",
+          organizationId: orgId,
+        },
+      });
+    }
 
     revalidatePath("/app");
     return { success: true };
@@ -223,11 +286,59 @@ export async function updateMemberRole(
       },
     });
 
+    const systemRoleKey = role === "owner" ? "enterprise_admin" : role === "admin" ? "lead" : "member";
+    const targetRole = await db.query.orgRoles.findFirst({
+      where: and(eq(orgRoles.orgId, orgId), eq(orgRoles.key, systemRoleKey)),
+    });
+    if (targetRole) {
+      await db.delete(memberRoleAssignments).where(eq(memberRoleAssignments.memberId, memberId));
+      await db.insert(memberRoleAssignments).values({
+        id: createId(),
+        memberId,
+        roleId: targetRole.id,
+        source: "manual",
+      });
+    }
+
     revalidatePath("/app");
     return { success: true };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to update role";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Update assignments for multiple custom/system roles.
+ */
+export async function updateMemberAssignedRoles(
+  orgId: string,
+  memberId: string,
+  roleIds: string[]
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireOrgPermission(orgId, "members.manage_roles");
+    
+    await db.delete(memberRoleAssignments)
+      .where(eq(memberRoleAssignments.memberId, memberId));
+    
+    if (roleIds.length > 0) {
+      await db.insert(memberRoleAssignments).values(
+        roleIds.map((roleId) => ({
+          id: createId(),
+          memberId,
+          roleId,
+          source: "manual",
+        }))
+      );
+    }
+
+    revalidatePath("/app");
+    return { success: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to update assigned roles";
     return { success: false, error: message };
   }
 }

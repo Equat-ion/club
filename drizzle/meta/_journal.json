@@ -29,6 +29,20 @@
       "when": 1776165377885,
       "tag": "0003_colossal_goliath",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779709763946,
+      "tag": "0004_young_iron_monger",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779710073221,
+      "tag": "0005_volatile_dakota_north",
+      "breakpoints": true
     }
   ]
 }

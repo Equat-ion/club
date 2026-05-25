@@ -39,15 +39,19 @@ describe("SettingsContent", () => {
         orgName="ACM Club"
         orgLogo={null}
         initialSSOProviders={[]}
+        enterpriseModeEnabled={false}
+        roles={[]}
+        initialMappings={[]}
+        initialReviewQueue={[]}
       />,
     );
 
     expect(container.querySelector("#org-name")).not.toBeNull();
     expect(container.querySelector("#logo")).not.toBeNull();
-    expect(container.querySelector("#sso")).not.toBeNull();
+    expect(container.querySelector("#enterprise")).not.toBeNull();
     expect(container.querySelector("#danger")).not.toBeNull();
     expect(
-      screen.getByRole("button", { name: "Enterprise SSO" }),
+      screen.getByRole("button", { name: "Enterprise" }),
     ).toBeInTheDocument();
   });
 });

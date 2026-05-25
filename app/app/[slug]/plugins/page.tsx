@@ -7,6 +7,7 @@ import { orgProfiles } from "@/lib/db/schema/orgs";
 import { eq, and } from "drizzle-orm";
 import { getOrgPlugins } from "@/actions/plugins";
 import { PluginMarketplace } from "@/components/settings/plugin-marketplace";
+import { getSessionOrgAccess } from "@/lib/auth/session";
 
 export async function generateMetadata() {
     return {
@@ -55,8 +56,8 @@ export default async function PluginsPage({
         redirect("/app");
     }
 
-    // Only owners can access settings
-    if (membership.role !== "owner") {
+    const access = await getSessionOrgAccess(org.id);
+    if (!access.effectivePermissions.includes("plugins.manage")) {
         redirect(`/app/${slug}`);
     }
 

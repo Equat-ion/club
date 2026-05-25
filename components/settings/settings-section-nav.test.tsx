@@ -10,14 +10,14 @@ describe("SettingsSectionNav", () => {
     render(
       <SettingsSectionNav
         sections={SETTINGS_SECTIONS}
-        activeSectionId="sso"
+        activeSectionId="enterprise"
         onNavigate={onNavigate}
       />,
     );
 
     expect(screen.getByText("Organization Name")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Enterprise SSO" }),
+      screen.getByRole("button", { name: "Enterprise" }),
     ).toHaveAttribute("data-active", "true");
   });
 });

@@ -24,12 +24,15 @@ import { ROLE_DISPLAY_NAMES } from "@/lib/auth/permissions";
 import { ChangeRoleDialog } from "./change-role-dialog";
 import { RemoveMemberDialog } from "./remove-member-dialog";
 import type { MemberWithUser } from "@/actions/members";
+import { MemberPermissionBadges } from "./member-permission-badges";
+import { useOrg } from "@/hooks/use-org";
 
 type Props = {
   orgId: string;
   members: MemberWithUser[];
   currentUserRole: string;
   currentUserId: string;
+  enterpriseModeEnabled: boolean;
 };
 
 const ROLE_ICONS: Record<string, typeof Shield> = {
@@ -52,18 +55,52 @@ function formatDate(date: Date) {
   }).format(new Date(date));
 }
 
+function getEnterpriseStatusBadge(status: string) {
+  switch (status) {
+    case "active":
+      return (
+        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px] py-0.5 px-2 font-medium">
+          Active (SSO)
+        </Badge>
+      );
+    case "pending_review":
+      return (
+        <Badge variant="outline" className="bg-amber-500/10 text-amber-700 border-amber-500/20 text-[10px] py-0.5 px-2 font-medium animate-pulse">
+          Pending Review
+        </Badge>
+      );
+    case "suspended":
+      return (
+        <Badge variant="outline" className="bg-rose-500/10 text-rose-700 border-rose-500/20 text-[10px] py-0.5 px-2 font-medium">
+          Suspended
+        </Badge>
+      );
+    case "deprovisioned":
+      return (
+        <Badge variant="outline" className="bg-gray-500/10 text-gray-700 border-gray-500/20 text-[10px] py-0.5 px-2 font-medium">
+          Deprovisioned
+        </Badge>
+      );
+    default:
+      return null;
+  }
+}
+
 export function MembersTable({
   orgId,
   members,
   currentUserRole,
   currentUserId,
+  enterpriseModeEnabled,
 }: Props) {
   const [changeRoleMember, setChangeRoleMember] =
     useState<MemberWithUser | null>(null);
   const [removeMember, setRemoveMember] = useState<MemberWithUser | null>(null);
+  
+  const org = useOrg();
 
-  // Only owners (Admin in UI) can change roles and remove members
-  const canManage = currentUserRole === "owner";
+  // Allow manage if user has permission members.manage_roles or is owner (fallback)
+  const canManage = org.permissions?.includes("members.manage_roles") || currentUserRole === "owner";
 
   return (
     <>
@@ -73,6 +110,7 @@ export function MembersTable({
             <TableRow>
               <TableHead>Member</TableHead>
               <TableHead>Role</TableHead>
+              {enterpriseModeEnabled && <TableHead>Status</TableHead>}
               <TableHead>Joined</TableHead>
               {canManage && <TableHead className="w-[50px]" />}
             </TableRow>
@@ -81,7 +119,7 @@ export function MembersTable({
             {members.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={canManage ? 4 : 3}
+                  colSpan={canManage ? (enterpriseModeEnabled ? 5 : 4) : (enterpriseModeEnabled ? 4 : 3)}
                   className="h-24 text-center text-muted-foreground"
                 >
                   No members found.
@@ -89,9 +127,11 @@ export function MembersTable({
               </TableRow>
             ) : (
               members.map((m) => {
-                const RoleIcon = ROLE_ICONS[m.role] ?? User;
                 const isSelf = m.userId === currentUserId;
                 const isOwner = m.role === "owner";
+                
+                // Disable manual role editing for SCIM active provisioned members
+                const roleEditingDisabled = m.provisionSource === "scim" && m.enterpriseStatus === "active";
 
                 return (
                   <TableRow key={m.id}>
@@ -114,7 +154,7 @@ export function MembersTable({
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-medium leading-none">
+                          <p className="text-sm font-medium leading-none flex items-center">
                             {m.user.name}
                             {isSelf && (
                               <span className="ml-1.5 text-xs text-muted-foreground">
@@ -129,14 +169,16 @@ export function MembersTable({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={ROLE_VARIANT[m.role] ?? "outline"}
-                        className="gap-1"
-                      >
-                        <RoleIcon className="size-3" />
-                        {ROLE_DISPLAY_NAMES[m.role] ?? m.role}
-                      </Badge>
+                      <MemberPermissionBadges
+                        assignedRoles={m.assignedRoles}
+                        legacyRole={m.role}
+                      />
                     </TableCell>
+                    {enterpriseModeEnabled && (
+                      <TableCell>
+                        {getEnterpriseStatusBadge(m.enterpriseStatus || "active")}
+                      </TableCell>
+                    )}
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(m.createdAt)}
                     </TableCell>
@@ -156,9 +198,10 @@ export function MembersTable({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
+                                disabled={roleEditingDisabled}
                                 onClick={() => setChangeRoleMember(m)}
                               >
-                                Change role
+                                {roleEditingDisabled ? "Managed via SCIM" : "Change role"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -184,6 +227,7 @@ export function MembersTable({
         orgId={orgId}
         member={changeRoleMember}
         onClose={() => setChangeRoleMember(null)}
+        enterpriseModeEnabled={enterpriseModeEnabled}
       />
 
       <RemoveMemberDialog

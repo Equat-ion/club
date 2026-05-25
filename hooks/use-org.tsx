@@ -11,6 +11,8 @@ export type OrgData = {
   plan: string;
   role: string; // internal role: "owner" | "admin" | "member"
   memberId: string;
+  orgSwitchingLocked: boolean;
+  permissions: string[];
 };
 
 const OrgContext = createContext<OrgData | null>(null);

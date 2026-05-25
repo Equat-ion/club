@@ -10,6 +10,7 @@ import { memberProfiles } from "@/lib/db/schema/members";
 import { eq, and, asc, sql } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 import { initHooks, hooksRegistry } from "@/lib/hooks";
+import { requireOrgPermission } from "@/lib/authz/guards";
 
 // Register all plugin hook handlers once at module load.
 initHooks();
@@ -161,7 +162,9 @@ export async function createTeam(
     const session = await getAuthenticatedUser();
     const membership = await verifyMembership(orgId, session.user.id);
 
-    if (membership.role !== "owner") {
+    try {
+      await requireOrgPermission(orgId, "org.manage");
+    } catch (err) {
       throw new Error("Only the organization owner can create teams");
     }
 
@@ -200,9 +203,13 @@ export async function updateTeam(
     const session = await getAuthenticatedUser();
     const membership = await verifyMembership(orgId, session.user.id);
 
-    const isLeader = await isTeamLeader(teamId, membership.id);
-    if (membership.role !== "owner" && !isLeader) {
-      throw new Error("You don't have permission to update this team");
+    try {
+      await requireOrgPermission(orgId, "org.manage");
+    } catch (err) {
+      const isLeader = await isTeamLeader(teamId, membership.id);
+      if (!isLeader) {
+        throw new Error("You don't have permission to update this team");
+      }
     }
 
     await db.update(teams)
@@ -237,7 +244,9 @@ export async function deleteTeam(orgId: string, teamId: string) {
     const session = await getAuthenticatedUser();
     const membership = await verifyMembership(orgId, session.user.id);
 
-    if (membership.role !== "owner") {
+    try {
+      await requireOrgPermission(orgId, "org.manage");
+    } catch (err) {
       throw new Error("Only the organization owner can delete teams");
     }
 
@@ -264,9 +273,13 @@ export async function addTeamMember(orgId: string, teamId: string, memberId: str
     const session = await getAuthenticatedUser();
     const membership = await verifyMembership(orgId, session.user.id);
 
-    const isLeader = await isTeamLeader(teamId, membership.id);
-    if (membership.role !== "owner" && !isLeader) {
-      throw new Error("You don't have permission to add members to this team");
+    try {
+      await requireOrgPermission(orgId, "org.manage");
+    } catch (err) {
+      const isLeader = await isTeamLeader(teamId, membership.id);
+      if (!isLeader) {
+        throw new Error("You don't have permission to add members to this team");
+      }
     }
 
     // Verify the memberId exists in the organization
@@ -305,9 +318,13 @@ export async function removeTeamMember(orgId: string, teamId: string, memberId: 
     const session = await getAuthenticatedUser();
     const membership = await verifyMembership(orgId, session.user.id);
 
-    const isLeader = await isTeamLeader(teamId, membership.id);
-    if (membership.role !== "owner" && !isLeader) {
-      throw new Error("You don't have permission to remove members from this team");
+    try {
+      await requireOrgPermission(orgId, "org.manage");
+    } catch (err) {
+      const isLeader = await isTeamLeader(teamId, membership.id);
+      if (!isLeader) {
+        throw new Error("You don't have permission to remove members from this team");
+      }
     }
 
     // Cannot remove self if last leader
@@ -350,9 +367,13 @@ export async function setTeamMemberRole(orgId: string, teamId: string, memberId:
     const session = await getAuthenticatedUser();
     const membership = await verifyMembership(orgId, session.user.id);
 
-    const isLeader = await isTeamLeader(teamId, membership.id);
-    if (membership.role !== "owner" && !isLeader) {
-      throw new Error("You don't have permission to manage roles in this team");
+    try {
+      await requireOrgPermission(orgId, "org.manage");
+    } catch (err) {
+      const isLeader = await isTeamLeader(teamId, membership.id);
+      if (!isLeader) {
+        throw new Error("You don't have permission to manage roles in this team");
+      }
     }
 
     if (role === "leader") {

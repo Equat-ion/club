@@ -12,6 +12,8 @@ type ActionResult<T> =
   | ({ success: true } & T)
   | { success: false; error: string };
 
+import { requireOrgPermission } from "@/lib/authz/guards";
+
 async function ensureOrgAdmin(orgId: string) {
   const requestHeaders = await headers();
   const session = await auth.api.getSession({ headers: requestHeaders });
@@ -19,17 +21,12 @@ async function ensureOrgAdmin(orgId: string) {
     return { ok: false as const, error: "Not authenticated" };
   }
 
-  const membership = await db.query.member.findFirst({
-    where: and(
-      eq(member.organizationId, orgId),
-      eq(member.userId, session.user.id),
-    ),
-  });
-
-  if (!membership || membership.role !== "owner") {
+  try {
+    await requireOrgPermission(orgId, "enterprise.manage");
+  } catch (err: any) {
     return {
       ok: false as const,
-      error: "Only the Admin can manage enterprise login",
+      error: err.message || "Unauthorized",
     };
   }
 
@@ -172,6 +169,18 @@ export async function registerSAMLSSOProvider(input: {
   const adminCheck = await ensureOrgAdmin(input.orgId);
   if (!adminCheck.ok) {
     return { success: false, error: adminCheck.error };
+  }
+
+  try {
+    const existingProviders = await auth.api.listSSOProviders({ headers: adminCheck.headers });
+    const existingForOrg = existingProviders.providers.filter(
+      (provider) => provider.organizationId === input.orgId,
+    );
+    if (existingForOrg.length > 0) {
+      return { success: false, error: "Only one SAML provider is allowed per organization" };
+    }
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to check existing providers" };
   }
 
   const providerId = input.providerId.trim();

@@ -56,6 +56,7 @@ export function OrgSwitcher({ orgs }: { orgs: OrgListItem[] }) {
             <SidebarMenuButton
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              disabled={activeOrg.orgSwitchingLocked}
             >
               <Avatar className="size-8 rounded-lg">
                 {activeOrg.logo && <AvatarImage src={activeOrg.logo} alt={activeOrg.name} />}
@@ -69,59 +70,61 @@ export function OrgSwitcher({ orgs }: { orgs: OrgListItem[] }) {
                   {ROLE_DISPLAY_NAMES[activeOrg.role] ?? activeOrg.role}
                 </span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4" />
+              {!activeOrg.orgSwitchingLocked && <ChevronsUpDown className="ml-auto size-4" />}
             </SidebarMenuButton>
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            align="start"
-            side="bottom"
-            sideOffset={4}
-          >
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
-              Organizations
-            </DropdownMenuLabel>
-            {visibleOrgs.map((org) => (
-              <DropdownMenuItem
-                key={org.id}
-                onClick={() => handleSwitch(org)}
-                className="gap-2 p-2"
-              >
-                <Avatar className="size-6 rounded-md">
-                  {org.logo && <AvatarImage src={org.logo} alt={org.name} />}
-                  <AvatarFallback className="rounded-md text-[10px]">
-                    {org.name.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="truncate">{org.name}</span>
-                {org.id === activeOrg.id && (
-                  <Badge variant="secondary" className="ml-auto text-[10px]">
-                    Active
-                  </Badge>
-                )}
-              </DropdownMenuItem>
-            ))}
-            {hasMore && (
-              <>
-                <DropdownMenuSeparator />
+          {!activeOrg.orgSwitchingLocked && (
+            <DropdownMenuContent
+              className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+              align="start"
+              side="bottom"
+              sideOffset={4}
+            >
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Organizations
+              </DropdownMenuLabel>
+              {visibleOrgs.map((org) => (
                 <DropdownMenuItem
-                  onClick={() => router.push("/app")}
+                  key={org.id}
+                  onClick={() => handleSwitch(org)}
                   className="gap-2 p-2"
                 >
-                  <Building2 className="size-4" />
-                  <span>View all organizations</span>
+                  <Avatar className="size-6 rounded-md">
+                    {org.logo && <AvatarImage src={org.logo} alt={org.name} />}
+                    <AvatarFallback className="rounded-md text-[10px]">
+                      {org.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate">{org.name}</span>
+                  {org.id === activeOrg.id && (
+                    <Badge variant="secondary" className="ml-auto text-[10px]">
+                      Active
+                    </Badge>
+                  )}
                 </DropdownMenuItem>
-              </>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => router.push("/app?create=true")}
-              className="gap-2 p-2"
-            >
-              <Plus className="size-4" />
-              <span>Create organisation</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
+              ))}
+              {hasMore && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => router.push("/app")}
+                    className="gap-2 p-2"
+                  >
+                    <Building2 className="size-4" />
+                    <span>View all organizations</span>
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => router.push("/app?create=true")}
+                className="gap-2 p-2"
+              >
+                <Plus className="size-4" />
+                <span>Create organisation</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          )}
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>

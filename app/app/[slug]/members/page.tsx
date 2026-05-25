@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
-import { organization, member } from "@/lib/db/schema/auth";
+import { organization, member, orgProfiles } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import {
   getMembers,
@@ -47,6 +47,12 @@ export default async function MembersPage({
     redirect("/app");
   }
 
+  // Load org profile for enterprise mode status
+  const profile = await db.query.orgProfiles.findFirst({
+    where: eq(orgProfiles.id, org.id),
+  });
+  const enterpriseModeEnabled = profile?.enterpriseModeEnabled ?? false;
+
   // Fetch data in parallel
   const [members, pendingInvitations, memberInfo] = await Promise.all([
     getMembers(org.id),
@@ -64,6 +70,7 @@ export default async function MembersPage({
         members={members}
         pendingInvitations={pendingInvitations}
         memberInfo={memberInfo}
+        enterpriseModeEnabled={enterpriseModeEnabled}
       />
     </div>
   );

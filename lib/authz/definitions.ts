@@ -1,0 +1,18 @@
+export const SYSTEM_PERMISSIONS = [
+  { key: "org.view", label: "View organization", dependsOn: {} },
+  { key: "org.manage", label: "Manage organization", dependsOn: { "org.view": true } },
+  { key: "members.view", label: "View members", dependsOn: {} },
+  { key: "members.invite", label: "Invite members", dependsOn: { "members.view": true } },
+  { key: "members.manage_roles", label: "Manage member roles", dependsOn: { "members.view": true } },
+  { key: "settings.view", label: "View settings", dependsOn: { "org.view": true } },
+  { key: "settings.manage", label: "Manage settings", dependsOn: { "settings.view": true } },
+  { key: "enterprise.manage", label: "Manage enterprise settings", dependsOn: { "settings.manage": true } },
+  { key: "billing.view", label: "View billing", dependsOn: { "org.view": true } },
+  { key: "billing.manage", label: "Manage billing", dependsOn: { "billing.view": true } },
+  { key: "plugins.view", label: "View plugins", dependsOn: { "org.view": true } },
+  { key: "plugins.manage", label: "Manage plugins", dependsOn: { "plugins.view": true } },
+  { key: "tasks.view", label: "View tasks", dependsOn: {} },
+  { key: "tasks.create", label: "Create tasks", dependsOn: { "tasks.view": true } },
+  { key: "tasks.edit", label: "Edit tasks", dependsOn: { "tasks.view": true } },
+  { key: "tasks.delete", label: "Delete tasks", dependsOn: { "tasks.view": true, "tasks.edit": true } },
+] as const;
