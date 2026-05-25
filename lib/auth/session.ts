@@ -11,6 +11,7 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { resolveEffectivePermissions } from "@/lib/authz/effective-permissions";
+import { SYSTEM_PERMISSIONS } from "@/lib/authz/definitions";
 
 /**
  * Get the current session in a Server Component or Server Action.
@@ -84,6 +85,38 @@ export async function getSessionOrgAccess(orgId: string): Promise<SessionOrgAcce
       grouped.get(p.roleId)!.push(p.permissionKey);
     }
     rolePermissions = Array.from(grouped.values());
+  } else {
+    // Fallback: assign default system permission sets based on legacy member role
+    if (mem.role === "owner") {
+      rolePermissions = [SYSTEM_PERMISSIONS.map((p) => p.key)];
+    } else if (mem.role === "admin") {
+      rolePermissions = [
+        [
+          "org.view",
+          "members.view",
+          "members.invite",
+          "settings.view",
+          "plugins.view",
+          "tasks.view",
+          "tasks.create",
+          "tasks.edit",
+        ],
+      ];
+    } else {
+      rolePermissions = [
+        [
+          "org.view",
+          "members.view",
+          "tasks.view",
+          "tasks.create",
+        ],
+      ];
+    }
+  }
+
+  // Safety net: Organization creators/owners must never be locked out
+  if (mem.role === "owner") {
+    rolePermissions.push(SYSTEM_PERMISSIONS.map((p) => p.key));
   }
 
   const direct = await db.select()
