@@ -11,6 +11,7 @@ import { AppBreadcrumb } from "@/components/layout/app-breadcrumb";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { getSessionOrgAccess } from "@/lib/auth/session";
+import { SyncActiveOrg } from "@/components/layout/sync-active-org";
 
 async function getOrgData(slug: string, userId: string) {
   // Load the org by slug
@@ -109,16 +110,11 @@ export default async function OrgLayout({
     notFound();
   }
 
-  // Set active org in session (fire and forget — non-blocking)
-  auth.api.setActiveOrganization({
-    headers: await headers(),
-    body: { organizationId: data.org.id },
-  });
-
   const orgs = await getUserOrgs(session.user.id);
 
   return (
     <OrgProvider org={data.org}>
+      <SyncActiveOrg orgId={data.org.id} activeOrgId={session.session.activeOrganizationId} />
       <AppSidebar
         user={{
           name: session.user.name,
