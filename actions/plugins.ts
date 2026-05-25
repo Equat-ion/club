@@ -17,6 +17,7 @@ import {
 import { eq, and, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { initHooks, hooksRegistry } from "@/lib/hooks";
+import { requireOrgPermission } from "@/lib/authz/guards";
 
 // Register all plugin hook handlers once at module load.
 initHooks();
@@ -44,11 +45,10 @@ export async function getOrgPlugins(
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return { success: false, error: "Not authenticated" };
 
-    const membership = await db.query.member.findFirst({
-        where: and(eq(member.organizationId, orgId), eq(member.userId, session.user.id)),
-    });
-    if (!membership || membership.role !== "owner") {
-        return { success: false, error: "Only the Admin can manage plugins" };
+    try {
+        await requireOrgPermission(orgId, "plugins.manage");
+    } catch (err: any) {
+        return { success: false, error: err.message || "Unauthorized" };
     }
 
     const rows = await db.query.orgPlugins.findMany({
@@ -98,11 +98,10 @@ export async function togglePlugin(
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return { success: false, error: "Not authenticated" };
 
-    const membership = await db.query.member.findFirst({
-        where: and(eq(member.organizationId, orgId), eq(member.userId, session.user.id)),
-    });
-    if (!membership || membership.role !== "owner") {
-        return { success: false, error: "Only the Admin can manage plugins" };
+    try {
+        await requireOrgPermission(orgId, "plugins.manage");
+    } catch (err: any) {
+        return { success: false, error: err.message || "Unauthorized" };
     }
 
     // Verify plugin exists in registry
@@ -209,11 +208,10 @@ export async function installPlugin(
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return { success: false, error: "Not authenticated" };
 
-    const membership = await db.query.member.findFirst({
-        where: and(eq(member.organizationId, orgId), eq(member.userId, session.user.id)),
-    });
-    if (!membership || membership.role !== "owner") {
-        return { success: false, error: "Only the Admin can manage plugins" };
+    try {
+        await requireOrgPermission(orgId, "plugins.manage");
+    } catch (err: any) {
+        return { success: false, error: err.message || "Unauthorized" };
     }
 
     // Verify plugin exists in registry

@@ -7,6 +7,7 @@ import { organization, member } from "@/lib/db/schema/auth";
 import { orgProfiles } from "@/lib/db/schema/orgs";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { requireOrgPermission } from "@/lib/authz/guards";
 
 /**
  * Update org name.
@@ -24,16 +25,10 @@ export async function updateOrgName(
     return { success: false, error: "Not authenticated" };
   }
 
-  // Verify user is the owner of this org
-  const membership = await db.query.member.findFirst({
-    where: and(
-      eq(member.organizationId, orgId),
-      eq(member.userId, session.user.id)
-    ),
-  });
-
-  if (!membership || membership.role !== "owner") {
-    return { success: false, error: "Only the Admin can update org settings" };
+  try {
+    await requireOrgPermission(orgId, "settings.manage");
+  } catch (err: any) {
+    return { success: false, error: err.message || "Unauthorized" };
   }
 
   if (!name.trim()) {
@@ -83,15 +78,10 @@ export async function updateOrgLogo(
     return { success: false, error: "Not authenticated" };
   }
 
-  const membership = await db.query.member.findFirst({
-    where: and(
-      eq(member.organizationId, orgId),
-      eq(member.userId, session.user.id)
-    ),
-  });
-
-  if (!membership || membership.role !== "owner") {
-    return { success: false, error: "Only the Admin can update org settings" };
+  try {
+    await requireOrgPermission(orgId, "settings.manage");
+  } catch (err: any) {
+    return { success: false, error: err.message || "Unauthorized" };
   }
 
   const result = await auth.api.updateOrganization({
@@ -134,15 +124,10 @@ export async function deleteOrg(
     return { success: false, error: "Not authenticated" };
   }
 
-  const membership = await db.query.member.findFirst({
-    where: and(
-      eq(member.organizationId, orgId),
-      eq(member.userId, session.user.id)
-    ),
-  });
-
-  if (!membership || membership.role !== "owner") {
-    return { success: false, error: "Only the Admin can delete the organization" };
+  try {
+    await requireOrgPermission(orgId, "settings.manage");
+  } catch (err: any) {
+    return { success: false, error: err.message || "Unauthorized" };
   }
 
   // Delete via better-auth API (cascades handle related data)

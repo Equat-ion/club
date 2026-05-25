@@ -20,6 +20,8 @@ export const orgProfiles = pgTable("org_profiles", {
     .references(() => organization.id, { onDelete: "cascade" }),
   plan: text("plan").notNull().default("free"), // 'free' | 'plus' | 'enterprise'
   issueCounter: integer("issue_counter").notNull().default(0),
+  enterpriseModeEnabled: boolean("enterprise_mode_enabled").notNull().default(false),
+  enterpriseModeEnabledAt: timestamp("enterprise_mode_enabled_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

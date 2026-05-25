@@ -64,6 +64,18 @@ export const ROLE_DISPLAY_NAMES: Record<string, string> = {
   member: "Member",
 } as const;
 
+export const LEGACY_ROLE_DISPLAY_NAMES: Record<string, string> = {
+  owner: "Admin",
+  admin: "Lead",
+  member: "Member",
+};
+
+export const SYSTEM_ROLE_KEYS = {
+  enterpriseAdmin: "enterprise_admin",
+  lead: "lead",
+  member: "member",
+} as const;
+
 /**
  * Maps UI-facing role labels back to internal better-auth role names.
  */

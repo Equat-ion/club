@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { organization } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 import { sso } from "@better-auth/sso";
+import { scim } from "@better-auth/scim";
 import { Resend } from "resend";
 import { db } from "@/lib/db";
 import * as dbSchema from "@/lib/db/schema";
@@ -12,7 +13,7 @@ import { getPluginsForPlan } from "@/lib/plugins/registry";
 import { createId } from "@paralleldrive/cuid2";
 import { dash } from "@better-auth/infra";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || "re_mock_key");
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -20,6 +21,7 @@ export const auth = betterAuth({
     schema: {
       ...dbSchema,
       sso_provider: dbSchema.ssoProvider,
+      scim_provider: dbSchema.scimProvider,
     },
   }),
 
@@ -100,6 +102,9 @@ export const auth = betterAuth({
         defaultRole: "member",
       },
       provisionUserOnEveryLogin: true,
+    }),
+    scim({
+      requiredRole: ["owner"],
     }),
     dash(),
 

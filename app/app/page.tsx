@@ -8,6 +8,8 @@ import { eq } from "drizzle-orm";
 import { ROLE_DISPLAY_NAMES } from "@/lib/auth/permissions";
 import { OrgSwitcherGrid } from "./org-switcher-grid";
 
+import { getSessionOrgAccess } from "@/lib/auth/session";
+
 async function getUserOrgsWithPlans(userId: string) {
   const memberships = await db.query.member.findMany({
     where: eq(member.userId, userId),
@@ -43,6 +45,18 @@ export default async function OrgSwitcherPage() {
 
   if (!session) {
     redirect("/sign-in");
+  }
+
+  if (session.session.activeOrganizationId) {
+    const access = await getSessionOrgAccess(session.session.activeOrganizationId);
+    if (access.orgSwitchingLocked) {
+      const activeOrg = await db.query.organization.findFirst({
+        where: eq(organization.id, session.session.activeOrganizationId),
+      });
+      if (activeOrg) {
+        redirect(`/app/${activeOrg.slug}/home`);
+      }
+    }
   }
 
   const orgs = await getUserOrgsWithPlans(session.user.id);

@@ -8,6 +8,7 @@ import { MembersTable } from "./members-table";
 import { PendingInvitations } from "./pending-invitations";
 import { InviteMemberDialog } from "./invite-member-dialog";
 import type { MemberWithUser, PendingInvitation } from "@/actions/members";
+import { useOrg } from "@/hooks/use-org";
 
 type Props = {
   orgId: string;
@@ -19,6 +20,7 @@ type Props = {
   memberInfo: {
     memberCount: number;
   };
+  enterpriseModeEnabled: boolean;
 };
 
 export function MembersContent({
@@ -29,10 +31,13 @@ export function MembersContent({
   members,
   pendingInvitations,
   memberInfo,
+  enterpriseModeEnabled,
 }: Props) {
   const [inviteOpen, setInviteOpen] = useState(false);
+  const org = useOrg();
 
-  const canInvite = currentUserRole === "owner" || currentUserRole === "admin";
+  // Invite capability based on permission members.invite or fallback roles
+  const canInvite = org.permissions?.includes("members.invite") || currentUserRole === "owner" || currentUserRole === "admin";
 
   return (
     <>
@@ -67,6 +72,7 @@ export function MembersContent({
             members={members}
             currentUserRole={currentUserRole}
             currentUserId={currentUserId}
+            enterpriseModeEnabled={enterpriseModeEnabled}
           />
         </TabsContent>
 
@@ -84,6 +90,7 @@ export function MembersContent({
         orgId={orgId}
         currentUserRole={currentUserRole}
         isAtLimit={false}
+        enterpriseModeEnabled={enterpriseModeEnabled}
       />
     </>
   );

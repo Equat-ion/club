@@ -9,7 +9,7 @@ import { updateOrgName, updateOrgLogo } from "@/actions/settings";
 import { DeleteOrgDialog } from "./delete-org-dialog";
 import { toast } from "sonner";
 import type { SSOProviderSummary } from "@/lib/auth/sso";
-import { SSOSettingsPanel } from "./sso-settings-panel";
+import { EnterpriseSettingsPanel } from "./enterprise-settings-panel";
 import { pickActiveSectionId } from "./section-nav-state";
 import { SettingsSectionNav } from "./settings-section-nav";
 import { SETTINGS_SECTIONS } from "./settings-sections";
@@ -20,12 +20,24 @@ export function SettingsContent({
   orgName,
   orgLogo,
   initialSSOProviders,
+  enterpriseModeEnabled,
+  roles,
+  initialMappings,
+  initialReviewQueue,
+  scimProviderId,
+  scimTokenLastFour,
 }: {
   orgId: string;
   orgSlug: string;
   orgName: string;
   orgLogo: string | null;
   initialSSOProviders: SSOProviderSummary[];
+  enterpriseModeEnabled: boolean;
+  roles: Array<{ id: string; name: string; key: string }>;
+  initialMappings: Array<{ id: string; groupKey: string; roleId: string }>;
+  initialReviewQueue: any[];
+  scimProviderId?: string;
+  scimTokenLastFour?: string;
 }) {
   const router = useRouter();
   const [name, setName] = useState(orgName);
@@ -185,8 +197,18 @@ export function SettingsContent({
           </form>
         </section>
 
-        <section id="sso" className="scroll-mt-24 space-y-4 border-t pt-8">
-          <SSOSettingsPanel orgId={orgId} initialProviders={initialSSOProviders} />
+        <section id="enterprise" className="scroll-mt-24 space-y-4 border-t pt-8">
+          <EnterpriseSettingsPanel
+            orgId={orgId}
+            orgSlug={orgSlug}
+            enterpriseModeEnabled={enterpriseModeEnabled}
+            initialSSOProviders={initialSSOProviders}
+            roles={roles}
+            initialMappings={initialMappings}
+            initialReviewQueue={initialReviewQueue}
+            scimProviderId={scimProviderId}
+            scimTokenLastFour={scimTokenLastFour}
+          />
         </section>
 
         <section id="danger" className="scroll-mt-24 border-t pt-8">

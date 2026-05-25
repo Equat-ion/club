@@ -3,9 +3,17 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth/auth";
 import { db } from "@/lib/db";
 import { organization, member } from "@/lib/db/schema/auth";
+import {
+  orgProfiles,
+  orgRoles,
+  enterpriseGroupMappings,
+  enterpriseConnections,
+} from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { SettingsContent } from "@/components/settings/settings-content";
 import type { SSOProviderSummary } from "@/lib/auth/sso";
+import { getEnterpriseReviewQueue } from "@/actions/enterprise";
+import { getSessionOrgAccess } from "@/lib/auth/session";
 
 export default async function SettingsPage({
   params,
@@ -43,8 +51,8 @@ export default async function SettingsPage({
     redirect("/app");
   }
 
-  // Only owners can access settings
-  if (membership.role !== "owner") {
+  const access = await getSessionOrgAccess(org.id);
+  if (!access.effectivePermissions.includes("settings.manage")) {
     redirect(`/app/${slug}`);
   }
 
@@ -60,6 +68,42 @@ export default async function SettingsPage({
     initialSSOProviders = [];
   }
 
+  // Query enterprise mode status
+  const profile = await db.query.orgProfiles.findFirst({
+    where: eq(orgProfiles.id, org.id),
+  });
+  const enterpriseModeEnabled = profile?.enterpriseModeEnabled ?? false;
+
+  // Query roles
+  const roles = await db.select()
+    .from(orgRoles)
+    .where(eq(orgRoles.orgId, org.id));
+  const roleOptions = roles.map((r) => ({
+    id: r.id,
+    name: r.name,
+    key: r.key,
+  }));
+
+  // Query mappings
+  const mappings = await db.select()
+    .from(enterpriseGroupMappings)
+    .where(eq(enterpriseGroupMappings.orgId, org.id));
+  const initialMappings = mappings.map((m) => ({
+    id: m.id,
+    groupKey: m.groupKey,
+    roleId: m.roleId,
+  }));
+
+  // Query review queue
+  const initialReviewQueue = await getEnterpriseReviewQueue(org.id);
+
+  // Query SCIM connection details
+  const conn = await db.query.enterpriseConnections.findFirst({
+    where: eq(enterpriseConnections.orgId, org.id),
+  });
+  const scimProviderId = conn?.scimProviderId ?? undefined;
+  const scimTokenLastFour = conn?.scimTokenLastFour ?? undefined;
+
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
       <div className="mb-6 w-full">
@@ -74,6 +118,12 @@ export default async function SettingsPage({
         orgName={org.name}
         orgLogo={org.logo ?? null}
         initialSSOProviders={initialSSOProviders}
+        enterpriseModeEnabled={enterpriseModeEnabled}
+        roles={roleOptions}
+        initialMappings={initialMappings}
+        initialReviewQueue={initialReviewQueue}
+        scimProviderId={scimProviderId}
+        scimTokenLastFour={scimTokenLastFour}
       />
     </div>
   );

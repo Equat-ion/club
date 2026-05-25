@@ -10,6 +10,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppBreadcrumb } from "@/components/layout/app-breadcrumb";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { getSessionOrgAccess } from "@/lib/auth/session";
 
 async function getOrgData(slug: string, userId: string) {
   // Load the org by slug
@@ -42,6 +43,9 @@ async function getOrgData(slug: string, userId: string) {
     ),
   });
 
+  // Get effective permissions and enterprise lock state
+  const access = await getSessionOrgAccess(org.id);
+
   return {
     org: {
       id: org.id,
@@ -51,6 +55,8 @@ async function getOrgData(slug: string, userId: string) {
       plan: profile?.plan ?? "free",
       role: membership.role,
       memberId: membership.id,
+      orgSwitchingLocked: access.orgSwitchingLocked,
+      permissions: access.effectivePermissions,
     } satisfies OrgData,
     enabledPluginIds: enabledPlugins.map((p) => p.pluginId),
   };

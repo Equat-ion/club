@@ -68,14 +68,14 @@ export function AppSidebar({ user, orgs, enabledPluginIds }: AppSidebarProps) {
       title: "Plugins",
       href: `/app/${slug}/plugins`,
       icon: Package,
-      visible: org.role === "owner",
+      visible: org.permissions?.includes("plugins.manage"),
     },
     {
       title: "Settings",
       href: `/app/${slug}/settings`,
       icon: Settings,
-      // Only visible to Admin (owner role)
-      visible: org.role === "owner",
+      // Only visible if user has settings.manage permission
+      visible: org.permissions?.includes("settings.manage"),
     },
   ];
 

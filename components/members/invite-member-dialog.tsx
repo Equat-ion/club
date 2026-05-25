@@ -30,6 +30,7 @@ type Props = {
   orgId: string;
   currentUserRole: string;
   isAtLimit: boolean;
+  enterpriseModeEnabled?: boolean;
 };
 
 export function InviteMemberDialog({
@@ -38,6 +39,7 @@ export function InviteMemberDialog({
   orgId,
   currentUserRole,
   isAtLimit,
+  enterpriseModeEnabled = false,
 }: Props) {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -101,26 +103,34 @@ export function InviteMemberDialog({
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="invite-role">Role</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as OrgRole)}>
-                <SelectTrigger id="invite-role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableRoles.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {role === "admin"
-                  ? "Leads can manage members and content but cannot access billing or settings."
-                  : "Members can view and contribute to content with limited management access."}
-              </p>
-            </div>
+
+            {enterpriseModeEnabled ? (
+              <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+                <p className="font-semibold text-foreground mb-1">Enterprise Mode Active</p>
+                This member will be invited with the default system fallback role. Their dynamic roles and access permissions will be managed by enterprise group mappings and SCIM rules.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="invite-role">Role</Label>
+                <Select value={role} onValueChange={(v) => setRole(v as OrgRole)}>
+                  <SelectTrigger id="invite-role">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRoles.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>
+                        {r.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {role === "admin"
+                    ? "Leads can manage members and content but cannot access billing or settings."
+                    : "Members can view and contribute to content with limited management access."}
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button

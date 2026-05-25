@@ -33,6 +33,7 @@ import {
   type HookPayload,
 } from "@/lib/hooks";
 import { MAX_TASK_LABELS } from "@/lib/plugins/tasks-constants";
+import { requireOrgPermission } from "@/lib/authz/guards";
 
 // Register all plugin hook handlers once at module load.
 initHooks();
@@ -716,9 +717,9 @@ export async function updateTask(
  * Delete a task.
  */
 async function deleteTasksForOrg(orgId: string, taskIds: string[], actorId: string) {
-  const membership = await verifyMembership(orgId, actorId);
-
-  if (membership.role !== "owner" && membership.role !== "admin") {
+  try {
+    await requireOrgPermission(orgId, "tasks.delete");
+  } catch (err) {
     throw new Error("You don't have permission to delete tasks");
   }
 
@@ -812,16 +813,13 @@ export async function createLabel(orgId: string, data: { name: string; color: st
 export async function deleteLabel(orgId: string, labelId: string) {
   try {
     const session = await getAuthenticatedUser();
-    const membership = await verifyMembership(orgId, session.user.id);
-
-    if (membership.role !== "owner" && membership.role !== "admin") {
-      throw new Error("Permission denied");
-    }
+    await requireOrgPermission(orgId, "tasks.edit");
 
     await db.delete(labels).where(and(eq(labels.id, labelId), eq(labels.orgId, orgId)));
     return { success: true };
   } catch (error) {
-    return { success: false, error: "Failed to delete label" };
+    const message = error instanceof Error ? error.message : "Failed to delete label";
+    return { success: false, error: message };
   }
 }
 
