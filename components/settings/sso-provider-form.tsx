@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { registerSAMLSSOProvider } from "@/actions/sso";
+import { parseSAMLMetadataUrl, registerSAMLSSOProvider } from "@/actions/sso";
 
 export function SSOProviderForm({
   orgId,
@@ -23,13 +23,36 @@ export function SSOProviderForm({
   const [certificate, setCertificate] = useState("");
   const [audience, setAudience] = useState("");
   const [callbackUrl, setCallbackUrl] = useState("");
+  const [metadataUrl, setMetadataUrl] = useState("");
+  const [metadataLoading, setMetadataLoading] = useState(false);
+  const [lastMetadataUrl, setLastMetadataUrl] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
 
   const baseMissing =
     !providerId.trim() || !issuer.trim() || !domain.trim();
   const samlMissing = !entryPoint.trim() || !certificate.trim();
-  const disabled = submitting || baseMissing || samlMissing;
+  const disabled = submitting || metadataLoading || baseMissing || samlMissing;
+
+  async function handleMetadataLookup() {
+    const nextUrl = metadataUrl.trim();
+    if (!nextUrl || metadataLoading || nextUrl === lastMetadataUrl) return;
+
+    setMetadataLoading(true);
+    const result = await parseSAMLMetadataUrl({ orgId, metadataUrl: nextUrl });
+    setMetadataLoading(false);
+
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+
+    setLastMetadataUrl(nextUrl);
+    setIssuer(result.issuer);
+    setEntryPoint(result.entryPoint);
+    setCertificate(result.certificate);
+    toast.success("Metadata loaded");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,6 +87,8 @@ export function SSOProviderForm({
     setCertificate("");
     setAudience("");
     setCallbackUrl("");
+    setMetadataUrl("");
+    setLastMetadataUrl("");
 
     await onRegistered();
   }
@@ -102,6 +127,29 @@ export function SSOProviderForm({
             placeholder="https://idp.example.com"
             type="url"
             required
+          />
+        </div>
+
+        <div className="grid gap-2 sm:col-span-2">
+          <Label htmlFor="metadataUrl">IdP metadata URL (optional)</Label>
+          <Input
+            id="metadataUrl"
+            value={metadataUrl}
+            onChange={(e) => {
+              setMetadataUrl(e.target.value);
+              if (lastMetadataUrl) {
+                setLastMetadataUrl("");
+              }
+            }}
+            onBlur={() => void handleMetadataLookup()}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void handleMetadataLookup();
+              }
+            }}
+            placeholder="https://idp.example.com/metadata"
+            type="url"
           />
         </div>
       </div>
